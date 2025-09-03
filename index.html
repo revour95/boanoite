@@ -3,61 +3,90 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Simples — Morcego</title>
-  <meta name="description" content="Página simples para celular: só texto, imagens/gifs e um botão para avançar." />
+  <title>Apresentação Minimal — Morcego</title>
+  <meta name="description" content="Versão minimalista: cada página é texto + GIF + botão para próxima." />
   <style>
-    :root{--bg:#070607;--text:#eee;--accent:#db2b2b}
-    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
-    .page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top) + 20px) 18px calc(env(safe-area-inset-bottom) + 20px);box-sizing:border-box;text-align:center}
-    h1{font-size:20px;margin:0 0 8px}
-    p{margin:0 0 12px;color:#ddd}
-    .embed{width:90%;max-width:420px;margin:12px 0}
-    .btn{appearance:none;border:0;border-radius:12px;background:linear-gradient(180deg,var(--accent),#a11b1b);color:#fff;padding:12px 16px;font-weight:700;font-size:16px;width:90%;max-width:420px}
-    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06)}
+    :root{--bg:#ffffff;--text:#111;--accent:#db2b2b;--maxw:900px}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; -webkit-font-smoothing:antialiased}
+    .page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;text-align:center;gap:18px}
+    h1,h2{margin:0;font-weight:700}
+    h1{font-size:22px}
+    h2{font-size:20px}
+    p{margin:0;color:#222}
+    img.media{max-width:92%;height:auto;border-radius:8px;display:block}
+    .btn{appearance:none;border:0;border-radius:12px;background:var(--accent);color:#fff;padding:12px 16px;font-weight:700;font-size:16px;width:90%;max-width:420px}
+
+    /* Layout variants to avoid repetition */
+    .layout-a{display:flex;flex-direction:column;gap:12px}
+    .layout-b{display:flex;flex-direction:row;gap:12px;align-items:center}
+    .layout-c{display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+    .layout-d{display:flex;flex-direction:column;gap:12px;align-items:center}
+
+    /* Responsive adjustments */
+    @media (max-width:520px){
+      .layout-b{flex-direction:column;align-items:center}
+      .layout-c{align-items:center}
+      h1{font-size:20px}
+      h2{font-size:18px}
+    }
   </style>
 </head>
 <body>
-  <!-- PAGES: apenas texto, embed e botão para avançar -->
-  <main id="app">
-    <section class="page" data-index="0">
+  <!-- Minimal pages: gif files expected at assets/gif1.gif ... gif5.gif -->
+  <main>
+    <!-- Page 1: preserve original short texts, gif1 centered -->
+    <section class="page layout-a" data-index="0">
       <h1>Você teve um dia difícil hoje</h1>
-      <div class="embed">
-        <div class="tenor-gif-embed" data-postid="15658901" data-share-method="host" data-aspect-ratio="1" data-width="100%"><a href="https://tenor.com/view/bat-gif-15658901">Bat Sticker</a>from <a href="https://tenor.com/search/bat-stickers">Bat Stickers</a></div>
-      </div>
+      <img class="media" src="assets/gif1.gif" alt="gif 1" />
       <p>maaaaas agora você pode descansar</p>
       <p>e deixa que eu cuido disso</p>
-      <button class="btn" id="next">Próxima</button>
+      <button class="btn next">Próxima</button>
     </section>
 
-    <section class="page" data-index="1" style="display:none">
-      <h1>fiquei o dia toooooodo pensando em você</h1>
-      <p style="margin-bottom:8px">(isso quando a gente não tava conversando)</p>
-      <div class="embed">
-        <div class="tenor-gif-embed" data-postid="15658901" data-share-method="host" data-aspect-ratio="1" data-width="100%"><a href="https://tenor.com/view/bat-gif-15658901">Bat Sticker</a>from <a href="https://tenor.com/search/bat-stickers">Bat Stickers</a></div>
+    <!-- Page 2: layout B — gif left, texts stacked on right (collapses to column on small screens) -->
+    <section class="page layout-b" data-index="1" style="display:none">
+      <img class="media" src="assets/gif2.gif" alt="gif 2" style="width:44%;max-width:220px" />
+      <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start;max-width:420px">
+        <h2>Placeholder — Texto A</h2>
+        <p>Placeholder — Texto B com complemento curto.</p>
       </div>
-      <p>vi você no reflexo do vidro e sorri sem querer</p>
-      <button class="btn" id="next2">Próxima</button>
+      <button class="btn next" style="width:140px;">Próxima</button>
     </section>
 
-    <section class="page" data-index="2" style="display:none">
-      <h1>Durma bem 💫</h1>
-      <div class="embed">
-        <div class="tenor-gif-embed" data-postid="15658901" data-share-method="host" data-aspect-ratio="1" data-width="100%"><a href="https://tenor.com/view/bat-gif-15658901">Bat Sticker</a>from <a href="https://tenor.com/search/bat-stickers">Bat Stickers</a></div>
+    <!-- Page 3: layout C — text 1, big centered gif, text 2 underneath -->
+    <section class="page layout-c" data-index="2" style="display:none">
+      <div style="max-width:520px;width:100%">
+        <h2 style="margin-bottom:8px">Placeholder — Texto 1</h2>
+        <img class="media" src="assets/gif3.gif" alt="gif 3" />
+        <p style="margin-top:10px">Placeholder — Texto 2 explicativo.</p>
       </div>
+      <button class="btn next">Próxima</button>
+    </section>
+
+    <!-- Page 4: layout D — full-width-ish gif on top, two small texts side-by-side below on wide screens -->
+    <section class="page layout-d" data-index="3" style="display:none">
+      <img class="media" src="assets/gif4.gif" alt="gif 4" />
+      <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:560px">
+        <div style="flex:1;min-width:160px"><h2>Placeholder — Texto 1</h2><p>Breve complemento.</p></div>
+        <div style="flex:1;min-width:160px"><h2>Placeholder — Texto 2</h2><p>Breve complemento.</p></div>
+      </div>
+      <button class="btn next">Próxima</button>
+    </section>
+
+    <!-- Page 5: final minimal page — gif5 and two tiny lines, NO botão de voltar/início -->
+    <section class="page layout-a" data-index="4" style="display:none">
+      <img class="media" src="assets/gif5.gif" alt="gif 5" />
+      <h2>Durma bem 💫</h2>
       <p>Que amanhã te trate com mais calma.</p>
-      <button class="btn" id="restart">Voltar ao início</button>
+      <!-- intentionally no button here -->
     </section>
   </main>
 
-  <script type="text/javascript" async src="https://tenor.com/embed.js"></script>
   <script>
-    // Navegação mínima: apenas mostrar/ocultar páginas
     const pages = Array.from(document.querySelectorAll('.page'));
-    let i = 0;
-    function show(idx){ pages.forEach((p,pi)=> p.style.display = (pi===idx ? 'flex' : 'none')); }
-    document.getElementById('next').addEventListener('click', ()=>{ i = Math.min(pages.length-1, i+1); show(i); });
-    document.getElementById('next2').addEventListener('click', ()=>{ i = Math.min(pages.length-1, i+1); show(i); });
-    document.getElementById('restart').addEventListener('click', ()=>{ i = 0; show(i); });
+    let idx = 0;
+    function show(i){ pages.forEach((p,pi)=> p.style.display = (pi===i? 'flex':'none')); window.scrollTo(0,0); }
+    document.querySelectorAll('.next').forEach(b=> b.addEventListener('click', ()=>{ idx = Math.min(pages.length-1, idx+1); show(idx); }));
     show(0);
   </script>
 </body>
