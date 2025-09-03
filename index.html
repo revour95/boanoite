@@ -1,19 +1,21 @@
-<!-- index.html -->
 <!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
+  <!-- Important for mobile fullscreen / safe-area (notch) -->
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Morcego — Caminho</title>
+  <meta name="theme-color" content="#000000" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Caminho do Morcego</title>
 
-  <!-- Minimal, only game CSS -->
   <link rel="stylesheet" href="style.css" />
-  <!-- Phaser 3 CDN (sem build steps) -->
+
+  <!-- Phaser 3 (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
 </head>
 <body>
-  <!-- Apenas o container do jogo — sem headers, footers ou wrappers -->
-  <div id="game-container"></div>
+  <!-- Apenas o container do jogo -->
+  <div id="game-container" role="application" aria-label="Jogo Caminho do Morcego"></div>
 
   <!-- main game script -->
   <script src="main.js"></script>
