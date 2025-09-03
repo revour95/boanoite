@@ -3,108 +3,61 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Apresentação — Morcego (Simples)</title>
-  <meta name="description" content="Página simples para mobile: textos e botão para próxima página." />
+  <title>Simples — Morcego</title>
+  <meta name="description" content="Página simples para celular: só texto, imagens/gifs e um botão para avançar." />
   <style>
-    :root{--bg:#080708;--card:#0f0f10;--accent:#db2b2b;--muted:#222;--radius:16px}
-    html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial; background:linear-gradient(180deg,var(--bg),#09090a);color:#eee;-webkit-font-smoothing:antialiased}
-    .wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top) + 18px) 18px calc(env(safe-area-inset-bottom) + 18px);box-sizing:border-box}
-    .card{width:100%;max-width:520px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border-radius:18px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.03);display:flex;flex-direction:column;gap:12px;align-items:center}
-    h1{font-size:18px;margin:0;text-align:center}
-    p{margin:0;text-align:center;color:#ddd}
-    .note{font-size:13px;color:#bfbfbf}
-    .btn{margin-top:8px;background:linear-gradient(180deg,var(--accent),#a11b1b);padding:12px 18px;border-radius:12px;border:none;color:#fff;font-weight:700;font-size:16px;width:100%;max-width:360px}
-    .ghost{background:transparent;border:1px solid rgba(255,255,255,0.06)}
-    .logo{width:86px;height:56px;image-rendering:pixelated;display:block}
-    .embed-wrap{width:100%;display:flex;justify-content:center}
-    .pager{display:flex;gap:8px;margin-top:8px}
-    .dot{width:8px;height:8px;border-radius:99px;background:rgba(255,255,255,0.06)}
-    .dot.active{background:var(--accent)}
-
-    /* small screens tweaks */
-    @media (max-width:420px){ .card{padding:14px;border-radius:14px} h1{font-size:17px} .btn{font-size:15px;padding:12px} }
+    :root{--bg:#070607;--text:#eee;--accent:#db2b2b}
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+    .page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top) + 20px) 18px calc(env(safe-area-inset-bottom) + 20px);box-sizing:border-box;text-align:center}
+    h1{font-size:20px;margin:0 0 8px}
+    p{margin:0 0 12px;color:#ddd}
+    .embed{width:90%;max-width:420px;margin:12px 0}
+    .btn{appearance:none;border:0;border-radius:12px;background:linear-gradient(180deg,var(--accent),#a11b1b);color:#fff;padding:12px 16px;font-weight:700;font-size:16px;width:90%;max-width:420px}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06)}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <!-- Page container (simple multi-page with show/hide) -->
-    <div id="page1" class="card" style="display:block">
-      <!-- optional tiny pixel bat as decorative logo -->
-      <svg class="logo" viewBox="0 0 32 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <rect width="32" height="20" fill="#070607"/>
-        <rect x="4" y="2" width="2" height="1" fill="#c92a2a" />
-        <rect x="6" y="2" width="2" height="1" fill="#c92a2a" />
-        <rect x="10" y="2" width="2" height="1" fill="#c92a2a" />
-        <rect x="12" y="2" width="2" height="1" fill="#c92a2a" />
-        <rect x="2" y="4" width="4" height="2" fill="#5a5a5a" />
-        <rect x="6" y="4" width="2" height="2" fill="#c92a2a" />
-        <rect x="8" y="4" width="8" height="2" fill="#5a5a5a" />
-      </svg>
-
+  <!-- PAGES: apenas texto, embed e botão para avançar -->
+  <main id="app">
+    <section class="page" data-index="0">
       <h1>Você teve um dia difícil hoje</h1>
-      <p class="note">(Toque no botão para continuar — a página é feita para celular)</p>
-
-      <div class="embed-wrap">
+      <div class="embed">
         <div class="tenor-gif-embed" data-postid="15658901" data-share-method="host" data-aspect-ratio="1" data-width="100%"><a href="https://tenor.com/view/bat-gif-15658901">Bat Sticker</a>from <a href="https://tenor.com/search/bat-stickers">Bat Stickers</a></div>
       </div>
-
       <p>maaaaas agora você pode descansar</p>
       <p>e deixa que eu cuido disso</p>
+      <button class="btn" id="next">Próxima</button>
+    </section>
 
-      <button class="btn" id="nextBtn">Próxima página</button>
-      <div class="pager" aria-hidden="true"><div class="dot active"></div><div class="dot"></div><div class="dot"></div></div>
-    </div>
-
-    <div id="page2" class="card" style="display:none">
+    <section class="page" data-index="1" style="display:none">
       <h1>fiquei o dia toooooodo pensando em você</h1>
-      <p class="note">(isso quando a gente não tava conversando)</p>
-
-      <div class="embed-wrap">
+      <p style="margin-bottom:8px">(isso quando a gente não tava conversando)</p>
+      <div class="embed">
         <div class="tenor-gif-embed" data-postid="15658901" data-share-method="host" data-aspect-ratio="1" data-width="100%"><a href="https://tenor.com/view/bat-gif-15658901">Bat Sticker</a>from <a href="https://tenor.com/search/bat-stickers">Bat Stickers</a></div>
       </div>
+      <p>vi você no reflexo do vidro e sorri sem querer</p>
+      <button class="btn" id="next2">Próxima</button>
+    </section>
 
-      <p>— vi você no reflexo do vidro e sorri sem querer</p>
-
-      <div style="width:100%;display:flex;gap:8px;justify-content:center">
-        <button class="btn ghost" id="backBtn">Voltar</button>
-        <button class="btn" id="nextBtn2">Próxima</button>
-      </div>
-      <div class="pager" aria-hidden="true"><div class="dot"></div><div class="dot active"></div><div class="dot"></div></div>
-    </div>
-
-    <div id="page3" class="card" style="display:none">
+    <section class="page" data-index="2" style="display:none">
       <h1>Durma bem 💫</h1>
-      <p class="note">Eu trouxe algo para você.</p>
-
-      <div class="embed-wrap">
+      <div class="embed">
         <div class="tenor-gif-embed" data-postid="15658901" data-share-method="host" data-aspect-ratio="1" data-width="100%"><a href="https://tenor.com/view/bat-gif-15658901">Bat Sticker</a>from <a href="https://tenor.com/search/bat-stickers">Bat Stickers</a></div>
       </div>
-
       <p>Que amanhã te trate com mais calma.</p>
       <button class="btn" id="restart">Voltar ao início</button>
-      <div class="pager" aria-hidden="true"><div class="dot"></div><div class="dot"></div><div class="dot active"></div></div>
-    </div>
-
-  </div>
+    </section>
+  </main>
 
   <script type="text/javascript" async src="https://tenor.com/embed.js"></script>
   <script>
-    // Navegação simples entre páginas — otimizada para celular
-    const pages = [document.getElementById('page1'), document.getElementById('page2'), document.getElementById('page3')];
-    let p = 0;
-    function show(i){ pages.forEach((el,idx)=>el.style.display = (idx===i? 'block':'none')) }
-    document.getElementById('nextBtn').addEventListener('click', ()=>{ p = Math.min(2, p+1); show(p); })
-    document.getElementById('nextBtn2').addEventListener('click', ()=>{ p = Math.min(2, p+1); show(p); })
-    document.getElementById('backBtn').addEventListener('click', ()=>{ p = Math.max(0, p-1); show(p); })
-    document.getElementById('restart').addEventListener('click', ()=>{ p=0; show(p); })
-
-    // indicador de dots (atualiza visual simples)
-    function updateDots(){ const dots = document.querySelectorAll('.pager'); dots.forEach((pg,idx)=>{ const nodeDots = pg.querySelectorAll('.dot'); nodeDots.forEach((d,i)=>{ d.classList.toggle('active', i===p) }) }) }
-    // chama updateDots sempre que trocamos página
-    const origNext = document.getElementById('nextBtn').onclick; // not used but safe
-    document.querySelectorAll('#nextBtn, #nextBtn2, #backBtn, #restart').forEach(b=>b.addEventListener('click', ()=> setTimeout(updateDots,50)));
-
-    // garante que a primeira página seja visível
+    // Navegação mínima: apenas mostrar/ocultar páginas
+    const pages = Array.from(document.querySelectorAll('.page'));
+    let i = 0;
+    function show(idx){ pages.forEach((p,pi)=> p.style.display = (pi===idx ? 'flex' : 'none')); }
+    document.getElementById('next').addEventListener('click', ()=>{ i = Math.min(pages.length-1, i+1); show(i); });
+    document.getElementById('next2').addEventListener('click', ()=>{ i = Math.min(pages.length-1, i+1); show(i); });
+    document.getElementById('restart').addEventListener('click', ()=>{ i = 0; show(i); });
     show(0);
   </script>
 </body>
