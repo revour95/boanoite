@@ -27,22 +27,26 @@
     .sparkle{position:fixed;pointer-events:none;mix-blend-mode:screen}
     @keyframes pop{0%{transform:scale(0);opacity:1}100%{transform:scale(1.4);opacity:0}}
 
+    /* Slider */
+    .slider-wrap{width:92%;max-width:520px;display:flex;flex-direction:column;gap:10px;align-items:center}
+    input[type=range]{width:100%}
+
     /* Responsive */
     @media (max-width:520px){ h1{font-size:20px} h2{font-size:18px} }
   </style>
 </head>
 <body>
   <main>
-    <!-- Page 1: preserve original short texts, gif1 centered -->
+    <!-- Page 1: preserve original short texts, gif1 centered (no parenthesis anywhere) -->
     <section class="page layout-a" data-index="0">
       <h1>Você teve um dia difícil hoje</h1>
       <img class="media" src="assets/gif1.gif" alt="gif 1" />
       <p>maaaaas agora você pode descansar</p>
       <p>e deixa que eu cuido disso</p>
-      <button class="btn next">Próxima</button>
+      <button class="btn next">proxima</button>
     </section>
 
-    <!-- Page 2: gif left, two playful texts and a heart button that envia coraçõezinhos -->
+    <!-- Page 2: gif left, two playful texts and a heart button that envia coraçõezinhos (only heart emotes) -->
     <section class="page layout-b" data-index="1" style="display:none">
       <img class="media" src="assets/gif2.gif" alt="gif 2" style="width:44%;max-width:220px" />
       <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start;max-width:420px">
@@ -53,45 +57,40 @@
           <small style="color:#666">Toque para enviar um coração animado</small>
         </div>
       </div>
-      <button class="btn next" style="width:140px;">Próxima</button>
+      <button class="btn next" style="width:140px;">procsima</button>
     </section>
 
-    <!-- Page 3: big centered gif, two texts where "esconderijo" aparece ao tocar (peek) -->
+    <!-- Page 3: big centered gif, two texts where esconderijo aparece ao tocar (peek) -->
     <section class="page layout-c" data-index="2" style="display:none">
       <div style="max-width:520px;width:100%">
         <h2 style="margin-bottom:8px">Sabe quando alguém faz seu dia melhor?</h2>
         <img class="media" src="assets/gif3.gif" alt="gif 3" />
         <p style="margin-top:10px">Toque o botão pra receber uma surpresa curta.</p>
         <div style="margin-top:8px">
-          <button class="btn" id="peekBtn" style="width:200px;margin:auto">Toque aqui 🥺</button>
-          <p class="peek" id="peekText">Você acabou de ganhar um sorriso meu — guardado só pra você ✨</p>
+          <button class="btn" id="peekBtn" style="width:200px;margin:auto">Toque aqui</button>
+          <p class="peek" id="peekText">Você acabou de ganhar um sorriso meu — guardado só pra você ❤️</p>
         </div>
       </div>
-      <button class="btn next">Próxima</button>
+      <button class="btn next">clica aqui ó</button>
     </section>
 
-    <!-- Page 4: gif top, dois pequenos textos que revelam mini-complimentos ao tocar (não repetitivo) -->
+    <!-- Page 4: gif top, slider 'volume' that explodes to infinity when dragged to end -->
     <section class="page layout-d" data-index="3" style="display:none">
       <img class="media" src="assets/gif4.gif" alt="gif 4" />
-      <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:560px">
-        <div style="flex:1;min-width:160px;cursor:pointer" class="compl" data-message="Seu riso é meu som favorito."> 
-          <h2>Toque aqui — Texto 1</h2>
-          <p>Breve complemento.</p>
-        </div>
-        <div style="flex:1;min-width:160px;cursor:pointer" class="compl" data-message="Você deixa os dias mais leves sem esforço."> 
-          <h2>Toque aqui — Texto 2</h2>
-          <p>Breve complemento.</p>
-        </div>
+      <div class="slider-wrap">
+        <p style="margin:0">se quiser ver o tanto que eu te amo arrasta até o final</p>
+        <input id="loveSlider" type="range" min="1" max="100" value="1" />
+        <div id="loveValue" style="font-weight:700">1%</div>
       </div>
-      <button class="btn next">Próxima</button>
+      <button class="btn next">tem mais coisaaa</button>
     </section>
 
-    <!-- Page 5: final minimal page — gif5 and two tiny lines, NO botão -->
+    <!-- Page 5: final minimal page — gif5 and two tiny lines, no parenthesis text and only heart emoji if any -->
     <section class="page layout-a" data-index="4" style="display:none">
       <img class="media" src="assets/gif5.gif" alt="gif 5" />
-      <h2>Durma bem 💫</h2>
+      <h2>Durma bem ❤️</h2>
       <p>Que amanhã te trate com mais calma.</p>
-      <p style="color:#888;font-size:13px;margin-top:8px">(Se quiser, toque em qualquer lugar para mandar um sorriso de volta)</p>
+      <p style="color:#888;font-size:13px;margin-top:8px">Se quiser, toque em qualquer lugar para mandar um sorriso de volta</p>
     </section>
   </main>
 
@@ -114,17 +113,38 @@
       const t = document.getElementById('peekText'); t.classList.add('show'); setTimeout(()=> t.classList.remove('show'),2800);
     })}
 
-    // Page 4: tapping a text reveals a small compliment bubble + tiny sparkles
-    document.querySelectorAll('.compl').forEach(el=> el.addEventListener('click', ()=>{
-      const msg = el.dataset.message || 'Você é incrível.';
-      showBubble(msg, el);
-    }));
-    function showBubble(msg, anchor){ const b = document.createElement('div'); b.textContent = msg; b.style.position='fixed'; b.style.left = (window.innerWidth/2 - 140)+'px'; b.style.bottom = '120px'; b.style.background='rgba(0,0,0,0.8)'; b.style.color='#fff'; b.style.padding='10px 14px'; b.style.borderRadius='12px'; b.style.maxWidth='280px'; b.style.textAlign='center'; b.style.zIndex=9999; document.body.appendChild(b); setTimeout(()=> b.remove(),2300); // sparkle
-      for(let s=0;s<6;s++){ setTimeout(()=> spawnSpark(), s*80); }
+    // Page 4: slider -> rapid growth to infinity when reaching the end
+    const slider = document.getElementById('loveSlider');
+    const loveValue = document.getElementById('loveValue');
+    let animInterval = null;
+    if(slider){
+      slider.addEventListener('input', ()=>{
+        const v = Number(slider.value);
+        if(v < 100){
+          // show current percent normally
+          loveValue.textContent = v + '%';
+        } else {
+          // reached the end: start a rapid blow-up animation that ends in '∞'
+          if(animInterval) return;
+          let display = 1;
+          let steps = 0;
+          animInterval = setInterval(()=>{
+            steps++;
+            display = Math.floor(display * 3 + 1);
+            if(display >= 1000000 || steps > 10){
+              loveValue.textContent = '∞';
+              clearInterval(animInterval);
+              animInterval = null;
+              slider.disabled = true;
+              return;
+            }
+            loveValue.textContent = display + '%';
+          }, 70); // very fast
+        }
+      });
     }
-    function spawnSpark(){ const s = document.createElement('div'); s.className='sparkle'; s.style.width='12px'; s.style.height='12px'; s.style.left = (30 + Math.random()*40)+'%'; s.style.bottom = (120 + Math.random()*80)+'px'; s.style.background = 'radial-gradient(circle,#ffd6d6,#ff8a8a)'; s.style.borderRadius='50%'; s.style.animation='pop 600ms forwards'; document.body.appendChild(s); setTimeout(()=> s.remove(),700); }
 
-    // optional: let final page tap send a small heart
+    // final page: tap anywhere -> small heart
     const final = pages[4]; if(final){ final.addEventListener('click', ()=> spawnHeart()); }
 
     show(0);
