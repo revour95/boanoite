@@ -1,117 +1,35 @@
-/* style.css - mobile-first */
+/* style.css - mobile-first, canvas em tela cheia */
 
 /* Reset minimal */
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html,body,#game-wrap { height: 100%; }
-
-body {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  background: linear-gradient(#0b0f1a, #071025);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px;
-}
-
-#game-wrap {
+html, body {
+  height: 100%;
   width: 100%;
-  max-width: 420px; /* phone-sized */
-  min-height: 640px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  background: #071025; /* tom escuro do "trecho difícil" */
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-#meta {
-  text-align: center;
-  padding: 8px 4px;
-}
-
-#meta h1 { font-size: 1.2rem; margin-bottom: 4px; }
-.small { font-size: 0.75rem; opacity: 0.9; }
-.muted { opacity: 0.6; text-align: center; margin-top: 6px; }
-
+/* Game container ocupa toda a viewport — canvas vai preencher */
 #game-container {
-  background: #000;
-  border-radius: 12px;
+  width: 100vw;
+  height: 100vh;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-  flex: 1 1 auto;
-  min-height: 480px;
+  display: block;
   position: relative;
+  touch-action: manipulation;
 }
 
-/* Simple HUD overlay controls (outside canvas, for accessibility on desktop) */
-.hud-overlay {
-  position: absolute;
-  left: 8px;
-  top: 8px;
-  display: flex;
-  gap: 8px;
-  z-index: 999;
-  pointer-events: none;
-  font-weight: 600;
-  text-shadow: 0 2px 6px rgba(0,0,0,0.8);
-}
-
-.hud-box {
-  background: rgba(0,0,0,0.4);
-  padding: 6px 8px;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  pointer-events: none;
-}
-
-/* Buttons used in HTML overlay (not inside canvas) */
-.overlay-controls {
-  position: absolute;
-  right: 8px;
-  top: 8px;
-  display: flex;
-  gap: 6px;
-  z-index: 999;
-}
-
-.btn {
-  background: rgba(255,255,255,0.06);
-  color: #fff;
-  padding: 6px 10px;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.06);
-  font-weight: 700;
-  font-size: 0.85rem;
-  cursor: pointer;
-  pointer-events: auto;
-}
-.btn:active { transform: scale(0.98); }
-
-/* Make canvas fill container */
+/* Forçar canvas a preencher o container (Phaser adiciona o canvas) */
 #game-container canvas {
   width: 100% !important;
   height: 100% !important;
   display: block;
+  object-fit: cover;
 }
 
-/* Responsive: desktop wider */
-@media (min-width: 900px) {
-  #game-wrap { max-width: 560px; }
-  #meta h1 { font-size: 1.4rem; }
-}
-
-/* Simple dialog box for final scene (when using HTML overlay) */
-.dialog-box {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: 10%;
-  background: rgba(255,255,255,0.95);
-  color: #111;
-  padding: 12px 14px;
-  border-radius: 12px;
-  max-width: 88%;
-  font-size: 1rem;
-  text-align: center;
-  z-index: 1200;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+/* HUD simples (aparecerá dentro do canvas via Phaser), mas caso queira overlays HTML */
+.hud-hidden {
+  display: none;
 }
