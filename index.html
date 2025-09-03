@@ -1,19 +1,299 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#000000" />
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>Caminho do Morcego</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Apresentação — Morcego</title>
+  <meta name="description" content="Apresentação interativa para celular — estética aconchegante em preto e vermelho." />
+  <style>
+    :root{
+      --bg:#070607;
+      --card:#0f0f10;
+      --muted:#2b2b2b;
+      --accent:#db2b2b;
+      --soft:rgba(219,43,43,0.12);
+      --glass:rgba(255,255,255,0.03);
+      --radius:18px;
+      --gap:18px;
+      --safe-top:env(safe-area-inset-top);
+      --safe-bottom:env(safe-area-inset-bottom);
+      font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg),#09090a);color:#eee}
+    /* App shell */
+    .app{height:100vh;max-height:100dvh;overflow:hidden;position:relative}
+    .slides{height:100%;display:flex;transition:transform 550ms cubic-bezier(.2,.9,.28,1);will-change:transform}
+    .slide{min-width:100%;height:100%;box-sizing:border-box;padding:calc(16px + var(--safe-top)) 18px calc(28px + var(--safe-bottom));display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
 
-  <link rel="stylesheet" href="style.css" />
+    /* Card */
+    .card{width:100%;max-width:640px;background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border-radius:22px;padding:20px;box-sizing:border-box;backdrop-filter: blur(6px);box-shadow: 0 6px 18px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.03)}
 
-  <!-- Phaser 3 CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    /* Bat cover */
+    .cover{display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;padding:28px}
+    .pixel-bat{width:220px;height:140px;image-rendering:pixelated;filter:drop-shadow(0 6px 12px rgba(0,0,0,0.7))}
+    h1{font-size:20px;margin:0;text-align:center}
+    p.lead{margin:0;font-size:15px;color:#ddd;opacity:0.9;text-align:center}
+
+    /* Text / typing */
+    .bubble{background:var(--glass);padding:14px;border-radius:14px;margin-top:12px;max-width:100%;text-align:center;font-size:17px}
+    .small{font-size:14px;color:#cfcfcf}
+
+    /* Media placeholders */
+    .media{width:100%;height:190px;background:linear-gradient(90deg,var(--muted),#151515);border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-top:12px}
+    .media img{max-width:100%;max-height:100%;object-fit:cover}
+
+    /* Controls */
+    .controls{position:fixed;left:0;right:0;bottom:calc(8px + var(--safe-bottom));display:flex;justify-content:center;gap:12px}
+    button.btn{background:linear-gradient(180deg,var(--card),#0b0b0b);border:1px solid rgba(255,255,255,0.04);padding:12px 16px;border-radius:12px;color:#fff;font-weight:600;box-shadow:0 6px 14px rgba(0,0,0,0.6)}
+    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06)}
+    .accent{background:linear-gradient(180deg,var(--accent),#a11b1b);box-shadow:0 8px 26px rgba(219,43,43,0.18)}
+
+    /* Dots */
+    .dots{display:flex;gap:8px;align-items:center}
+    .dot{width:8px;height:8px;border-radius:99px;background:rgba(255,255,255,0.06)}
+    .dot.active{background:var(--accent);box-shadow:0 6px 18px rgba(219,43,43,0.12)}
+
+    /* Floating embers */
+    .ember{position:absolute;pointer-events:none;border-radius:50%;opacity:0.9;mix-blend-mode:screen}
+    @keyframes floaty{0%{transform:translateY(0) scale(1);opacity:0.9}100%{transform:translateY(-220px) scale(.6);opacity:0.0}}
+
+    /* small typography */
+    .caption{font-size:13px;color:#bfbfbf;margin-top:10px;text-align:center}
+
+    /* Slide-specific styles */
+    .part-text{font-size:20px;line-height:1.34;margin:6px 0}
+    .typewriter{overflow:hidden;white-space:nowrap;border-right:3px solid rgba(255,255,255,0.06);animation:blink 1s steps(2) infinite}
+    @keyframes blink{50%{border-color:transparent}}
+
+    /* final slide */
+    .final-hero{display:flex;flex-direction:column;gap:12px;align-items:center}
+    .final-hero .hug{width:88%;max-width:420px;border-radius:16px;padding:18px;background:linear-gradient(180deg, rgba(219,43,43,0.06), transparent);text-align:center}
+
+    /* responsive tweaks */
+    @media(min-width:700px){.card{padding:28px}}
+  </style>
 </head>
 <body>
-  <div id="game-container" role="application" aria-label="Jogo Caminho do Morcego"></div>
-  <script src="main.js"></script>
+  <div class="app">
+    <div class="slides" id="slides">
+      <!-- COVER -->
+      <section class="slide">
+        <div class="card cover">
+          <!-- Pixel bat SVG (editable) -->
+          <svg class="pixel-bat" viewBox="0 0 32 20" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="morcego em pixel art">
+            <!-- Background grid to keep pixel feel -->
+            <rect width="32" height="20" fill="#070607"/>
+            <!-- Bat pixels (16-bit style) -->
+            <!-- Use two colors: light red and dark gray -->
+            <!-- Row 1 -->
+            <rect x="4" y="2" width="2" height="1" fill="#c92a2a" />
+            <rect x="6" y="2" width="2" height="1" fill="#c92a2a" />
+            <rect x="10" y="2" width="2" height="1" fill="#c92a2a" />
+            <rect x="12" y="2" width="2" height="1" fill="#c92a2a" />
+            <!-- Wings and body -->
+            <rect x="2" y="4" width="4" height="2" fill="#5a5a5a" />
+            <rect x="6" y="4" width="2" height="2" fill="#c92a2a" />
+            <rect x="8" y="4" width="8" height="2" fill="#5a5a5a" />
+            <rect x="16" y="4" width="2" height="2" fill="#c92a2a" />
+            <rect x="20" y="4" width="4" height="2" fill="#5a5a5a" />
+            <rect x="4" y="6" width="8" height="3" fill="#111" />
+            <rect x="14" y="6" width="8" height="3" fill="#111" />
+            <rect x="10" y="6" width="4" height="3" fill="#c92a2a" />
+            <rect x="12" y="9" width="2" height="1" fill="#111" />
+            <!-- little eyes -->
+            <rect x="11" y="7" width="1" height="1" fill="#fff" />
+            <rect x="14" y="7" width="1" height="1" fill="#fff" />
+          </svg>
+
+          <h1>Às vezes o mundo pesa... mas eu cuido de você.</h1>
+          <p class="lead">Toque para começar — deslize para navegar</p>
+
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <button class="btn accent" id="startBtn">Começar</button>
+            <button class="btn ghost" id="themeBtn">Alternar efeito</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- PARTE 1 -->
+      <section class="slide">
+        <div class="card">
+          <div style="display:flex;flex-direction:column;align-items:center">
+            <div class="bubble" id="p1line1">"Você teve um dia difícil hoje"</div>
+            <div class="media" id="p1media"><img src="gif-cansaço.gif" alt="gif de cansaço — substitua pelo seu"/></div>
+            <div class="bubble" id="p1line2">"maaaaas agora você pode descansar"</div>
+            <div class="bubble" id="p1line3">"e deixa que eu cuido disso"</div>
+            <p class="caption">(Substitua <code>gif-cansaço.gif</code> pelo seu gif: carregue em /assets ou use URL)</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- PARTE 2 e continuação (criei uma progressão emocional leve e fofa) -->
+      <section class="slide">
+        <div class="card">
+          <div style="width:100%;display:flex;flex-direction:column;align-items:center">
+            <div class="part-text typewriter" data-text="fiquei o dia toooooodo pensando em você (isso quando a gente não tava conversando)">fiquei o dia toooooodo pensando em você (isso quando a gente não tava conversando)</div>
+
+            <!-- Sugestões de continuação (aparecem com cliques) -->
+            <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;width:100%" id="continuacoes">
+              <button class="btn" data-line="vi você no reflexo do vidro e sorri sem querer">vi você no reflexo do vidro e sorri sem querer</button>
+              <button class="btn" data-line="guardei uma música que me lembrou de você">guardei uma música que me lembrou de você</button>
+              <button class="btn" data-line="planejei contar uma piada boba só pra te ver rir">planejei contar uma piada boba só pra te ver rir</button>
+            </div>
+
+            <p class="caption">Toque em uma das frases para revelar com animação.</p>
+            <div id="revArea" style="margin-top:10px;width:100%"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PARTE INTERATIVA: escolha seu descanso -->
+      <section class="slide">
+        <div class="card">
+          <div style="text-align:center">
+            <h2 style="margin:0">Quero cuidar de você</h2>
+            <p class="small">Escolha como quer descansar agora</p>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:12px">
+              <button class="btn" data-relax="Música calma e cochilo rápido">Música calma e cochilo rápido</button>
+              <button class="btn" data-relax="Sair na varanda e respirar fundo">Sair na varanda e respirar fundo</button>
+              <button class="btn" data-relax="Ler algo leve por 10 minutos">Ler algo leve por 10 minutos</button>
+            </div>
+
+            <div class="caption" id="choiceResult" style="margin-top:14px">(Sua escolha aparecerá aqui)</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FINAL -->
+      <section class="slide">
+        <div class="card final-hero">
+          <div class="hug">
+            <div style="font-size:18px;font-weight:700">Durma bem 💫</div>
+            <div style="margin-top:8px">Eu trouxe algo para você.</div>
+            <div class="media" style="height:220px;margin-top:12px"><img src="gif-fofo.gif" alt="gif final fofo — substitua"/></div>
+            <p class="small" style="margin-top:10px">"Que amanhã te trate com mais calma."</p>
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:10px">
+            <button class="btn accent" id="saveBtn">Salvar/Compartilhar</button>
+            <button class="btn ghost" id="restartBtn">Voltar ao início</button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- CONTROLS -->
+    <div class="controls">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="btn ghost" id="prevBtn">◀</button>
+        <div class="dots" id="dots"></div>
+        <button class="btn ghost" id="nextBtn">▶</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Simple slideshow (mobile friendly) + interactions
+    const slides = document.querySelectorAll('.slide');
+    const slidesWrap = document.getElementById('slides');
+    const dots = document.getElementById('dots');
+    let idx = 0;
+
+    function renderDots(){
+      dots.innerHTML = '';
+      slides.forEach((s,i)=>{
+        const d = document.createElement('div');d.className='dot'+(i===idx? ' active':'');d.addEventListener('click', ()=>go(i));dots.appendChild(d);
+      })
+    }
+
+    function go(i){
+      if(i<0) i=0; if(i>slides.length-1)i=slides.length-1; idx=i;
+      slidesWrap.style.transform = `translateX(${-idx*100}%)`;
+      renderDots();
+      // small focus actions
+      if(idx===2) animateTyping();
+    }
+
+    document.getElementById('nextBtn').addEventListener('click', ()=>go(idx+1));
+    document.getElementById('prevBtn').addEventListener('click', ()=>go(idx-1));
+
+    document.getElementById('startBtn').addEventListener('click', ()=>go(1));
+    document.getElementById('restartBtn').addEventListener('click', ()=>go(0));
+
+    // theme button toggles a subtle particle effect
+    let embOn = false;
+    document.getElementById('themeBtn').addEventListener('click', ()=>{
+      embOn = !embOn; if(embOn) spawnEmbers(10); else removeEmbers();
+    });
+
+    function spawnEmbers(n=12){
+      removeEmbers();
+      for(let i=0;i<n;i++){
+        const e = document.createElement('div');e.className='ember';
+        const size = 6 + Math.random()*26; e.style.width = size+'px'; e.style.height = size+'px';
+        e.style.left = Math.random()*92+'%'; e.style.bottom = Math.random()*6+'%';
+        e.style.background = 'radial-gradient(circle at 30% 30%, rgba(219,43,43,0.95), rgba(219,43,43,0.35))';
+        e.style.animation = 'floaty '+(6+Math.random()*6)+'s linear infinite';
+        e.style.transform = 'translateY(0)';
+        document.querySelector('.app').appendChild(e);
+      }
+    }
+    function removeEmbers(){document.querySelectorAll('.ember').forEach(x=>x.remove())}
+
+    // swipe support
+    let startX=0; let isDown=false;
+    slidesWrap.addEventListener('touchstart', e=>{startX = e.changedTouches[0].clientX; isDown=true});
+    slidesWrap.addEventListener('touchend', e=>{if(!isDown) return; const dx = e.changedTouches[0].clientX - startX; if(dx<-40) go(idx+1); if(dx>40) go(idx-1); isDown=false});
+
+    // Typing for slide 2 (index 2)
+    function animateTyping(){
+      const el = document.querySelector('.typewriter');
+      if(!el) return; if(el.dataset.typed) return; // run once
+      const txt = el.dataset.text || el.textContent; el.textContent=''; el.dataset.typed = '1';
+      let i=0; function step(){ if(i<=txt.length){ el.textContent = txt.slice(0,i); i++; setTimeout(step, 28 + Math.random()*40)} }
+      step();
+    }
+
+    // Continuation buttons behavior
+    document.querySelectorAll('#continuacoes button').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const r = document.createElement('div'); r.className='bubble'; r.style.marginTop='8px'; r.textContent = btn.dataset.line;
+        document.getElementById('revArea').appendChild(r);
+        btn.disabled = true; btn.style.opacity = .6;
+      })
+    })
+
+    // Relax choices
+    document.querySelectorAll('[data-relax]').forEach(b=>b.addEventListener('click', ()=>{
+      document.getElementById('choiceResult').textContent = 'Você escolheu: ' + b.dataset.relax + ' — boa escolha.'
+    }))
+
+    // Save / share (basic) — copies a friendly text
+    document.getElementById('saveBtn').addEventListener('click', ()=>{
+      const text = 'Mensagem de carinho — abra a apresentação!';
+      if(navigator.share){
+        navigator.share({title:'Mensagem',text}).catch(()=>alert('Compartilhar falhou'))
+      }else{
+        navigator.clipboard.writeText(text).then(()=>alert('Texto copiado!'))
+      }
+    })
+
+    // Dots
+    renderDots();
+
+    // keyboard for desktop testing
+    window.addEventListener('keydown', e=>{ if(e.key==='ArrowLeft') go(idx-1); if(e.key==='ArrowRight') go(idx+1) });
+
+    // Small hint: replace images
+    console.log('Substitua gif-cansaço.gif e gif-fofo.gif pelos seus próprios arquivos (ou URLs) em /assets ou no mesmo diretório.');
+
+    // Start on cover
+    go(0);
+  </script>
 </body>
 </html>
