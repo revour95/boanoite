@@ -1,80 +1,41 @@
 /* main.js
-   Versão corrigida:
-   - Fix no travamento do preload (load.on('complete') registrado antes do load)
-   - Feedback de progresso para o texto "Carregando..."
-   - Timeout fallback (10s) para evitar bloqueio infinito
-   - Canvas ocupa 100vh/100vw (index + CSS ajustados)
-   - Controles touch + desktop: input.on('pointerdown', ...) para todos
+   Versão corrigida para:
+   - Preload robusto (progress, complete, loaderror, fallback timeout)
+   - Canvas full-screen sem bordas (Phaser.Scale.RESIZE)
+   - Touch + mouse (pointerdown) controles
+   - Logs claros no console
+   - Mantém a estrutura: MenuScene (intro), GameScene (jogo), EndScene (final)
 */
 
 /* ===========================
-   Utility: SVG -> data URI
+   Helpers - SVG -> data URI
    =========================== */
 function svgToDataUri(svgString) {
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
 }
 
 /* ===========================
-   Embedded SVG Assets (data URIs)
+   Embedded SVG assets
+   (mantive as na versão original para evitar 404s)
    =========================== */
 
-/* Bat frames (3 frames: up, mid, down) - each 64x48 */
-const bat_up_svg = `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='48' viewBox='0 0 64 48'>
-  <g transform='translate(8,6)'>
-    <ellipse cx='16' cy='14' rx='8' ry='7' fill='#222' />
-    <circle cx='16' cy='12' r='2' fill='#fff' />
-    <path d='M0 18 C6 6, 12 6, 16 14 C20 6, 26 6, 32 18' fill='#333' stroke='#111' stroke-width='1'/>
-  </g>
-</svg>`;
-const bat_mid_svg = `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='48' viewBox='0 0 64 48'>
-  <g transform='translate(8,8)'>
-    <ellipse cx='16' cy='12' rx='8' ry='6' fill='#222' />
-    <circle cx='16' cy='10' r='2' fill='#fff' />
-    <path d='M0 18 C8 12, 24 12, 32 18' fill='#333' stroke='#111' stroke-width='1'/>
-  </g>
-</svg>`;
-const bat_down_svg = `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='48' viewBox='0 0 64 48'>
-  <g transform='translate(8,8)'>
-    <ellipse cx='16' cy='12' rx='8' ry='6' fill='#222' />
-    <circle cx='16' cy='10' r='2' fill='#fff' />
-    <path d='M0 8 C8 18, 24 18, 32 8' fill='#333' stroke='#111' stroke-width='1'/>
-  </g>
-</svg>`;
+/* Bat frames (3 frames) */
+const bat_up_svg = `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='48' viewBox='0 0 64 48'><g transform='translate(8,6)'><ellipse cx='16' cy='14' rx='8' ry='7' fill='#222' /><circle cx='16' cy='12' r='2' fill='#fff' /><path d='M0 18 C6 6, 12 6, 16 14 C20 6, 26 6, 32 18' fill='#333' stroke='#111' stroke-width='1'/></g></svg>`;
+const bat_mid_svg = `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='48' viewBox='0 0 64 48'><g transform='translate(8,8)'><ellipse cx='16' cy='12' rx='8' ry='6' fill='#222' /><circle cx='16' cy='10' r='2' fill='#fff' /><path d='M0 18 C8 12, 24 12, 32 18' fill='#333' stroke='#111' stroke-width='1'/></g></svg>`;
+const bat_down_svg = `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='48' viewBox='0 0 64 48'><g transform='translate(8,8)'><ellipse cx='16' cy='12' rx='8' ry='6' fill='#222' /><circle cx='16' cy='10' r='2' fill='#fff' /><path d='M0 8 C8 18, 24 18, 32 8' fill='#333' stroke='#111' stroke-width='1'/></g></svg>`;
 
 /* Coin 32x32 */
-const coin_svg = `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'>
-  <circle cx='16' cy='16' r='14' fill='#f6c84c' stroke='#c68b1a' stroke-width='2'/>
-  <circle cx='12' cy='12' r='3' fill='rgba(255,255,255,0.7)'/>
-</svg>`;
+const coin_svg = `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='#f6c84c' stroke='#c68b1a' stroke-width='2'/><circle cx='12' cy='12' r='3' fill='rgba(255,255,255,0.7)'/></svg>`;
 
-/* Spike (obstacle) 32x32 */
-const spike_svg = `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'>
-  <polygon points='0,28 8,8 16,28 24,8 32,28' fill='#111' stroke='#444' stroke-width='1'/>
-</svg>`;
+/* Spike */
+const spike_svg = `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><polygon points='0,28 8,8 16,28 24,8 32,28' fill='#111' stroke='#444' stroke-width='1'/></svg>`;
 
-/* Path tile 128x128 (dark, repeatable) */
-const path_tile_svg = `<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'>
-  <rect width='100%' height='100%' fill='#0b1530'/>
-  <g fill='#071025' opacity='0.9'>
-    <rect x='0' y='0' width='128' height='32'/>
-    <rect x='0' y='64' width='128' height='32'/>
-  </g>
-</svg>`;
+/* Path tile 128x128 */
+const path_tile_svg = `<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'><rect width='100%' height='100%' fill='#0b1530'/><g fill='#071025' opacity='0.9'><rect x='0' y='0' width='128' height='32'/><rect x='0' y='64' width='128' height='32'/></g></svg>`;
 
 /* Calm final background */
-const calm_bg_svg = `<svg xmlns='http://www.w3.org/2000/svg' width='720' height='480' viewBox='0 0 720 480'>
-  <defs>
-    <linearGradient id='g' x1='0' x2='0' y1='0' y2='1'>
-      <stop offset='0' stop-color='#dff7ee'/>
-      <stop offset='1' stop-color='#a9e0d8'/>
-    </linearGradient>
-  </defs>
-  <rect width='100%' height='100%' fill='url(#g)'/>
-  <ellipse cx='360' cy='420' rx='420' ry='120' fill='#e2f0ea'/>
-  <circle cx='550' cy='100' r='42' fill='#fff6a8' opacity='0.9'/>
-</svg>`;
+const calm_bg_svg = `<svg xmlns='http://www.w3.org/2000/svg' width='720' height='480' viewBox='0 0 720 480'><defs><linearGradient id='g' x1='0' x2='0' y1='0' y2='1'><stop offset='0' stop-color='#dff7ee'/><stop offset='1' stop-color='#a9e0d8'/></linearGradient></defs><rect width='100%' height='100%' fill='url(#g)'/><ellipse cx='360' cy='420' rx='420' ry='120' fill='#e2f0ea'/><circle cx='550' cy='100' r='42' fill='#fff6a8' opacity='0.9'/></svg>`;
 
-/* Convert to data URIs */
 const ASSETS = {
   'bat_up': svgToDataUri(bat_up_svg),
   'bat_mid': svgToDataUri(bat_mid_svg),
@@ -89,52 +50,58 @@ const ASSETS = {
    Scenes
    =========================== */
 
-/* --- PreloadScene --- */
+/* PreloadScene */
 class PreloadScene extends Phaser.Scene {
-  constructor() {
-    super({ key: 'PreloadScene' });
-  }
+  constructor() { super({ key: 'PreloadScene' }); }
 
   preload() {
-    // Keep a reference to the loading text so we can update it.
-    const w = this.sys.game.config.width;
-    const h = this.sys.game.config.height;
+    // Use dynamic scale values (works com RESIZE)
+    const w = Math.max(360, this.scale.width || window.innerWidth);
+    const h = Math.max(640, this.scale.height || window.innerHeight);
 
-    // Preserve the same "Carregando..." font/style used antes.
-    // (Mesmas propriedades: '18px' e cor branca)
+    // Loading text centered (will reposition se houver resize)
     this.loadingText = this.add.text(w/2, h/2, 'Carregando...', {
       font: '18px Arial',
       color: '#ffffff',
       align: 'center'
     }).setOrigin(0.5);
 
-    // IMPORTANT: register events BEFORE loading assets so we won't miss the 'complete' event.
+    // Safety flags
+    this._loadComplete = false;
+    this._fallbackTriggered = false;
+
+    // Progress handler (registered before queuing assets)
     this.load.on('progress', (value) => {
-      // Atualiza o texto com percent (mantendo estilo)
       const pct = Math.round(value * 100);
-      this.loadingText.setText(`Carregando... ${pct}%`);
-      // keep same font & look
-      this.loadingText.setStyle({ font: '18px Arial', color: '#ffffff' });
+      // Update text with percent
+      if (this.loadingText) this.loadingText.setText(`Carregando... ${pct}%`);
+      console.log(`[Preload] progress ${pct}%`);
     });
 
-    this._loadComplete = false;
-    // on complete -> start menu
+    // Load error handler (log)
+    this.load.on('loaderror', (file) => {
+      console.warn('[Preload] asset failed to load:', file && file.key);
+      // show small hint to user in the loading text
+      if (this.loadingText) this.loadingText.setText('Carregando... (erro em asset)');
+    });
+
+    // Complete handler
     this.load.on('complete', () => {
+      console.log('[Preload] complete');
       this._loadComplete = true;
-      // Small delay so player sees 100%
-      this.time.delayedCall(200, () => {
-        // remove loading text and start menu
+      // show 100% briefly then start menu
+      this.time.delayedCall(180, () => {
         if (this.loadingText) this.loadingText.destroy();
         this.scene.start('MenuScene');
       });
     });
 
-    // Fallback timeout: se algo travar no loader, evita bloqueio infinito.
+    // Fallback: if loader hangs for any reason, proceed after 10s
     this._fallbackTimer = this.time.delayedCall(10000, () => {
-      if (!this._loadComplete) {
-        console.warn('[Preload] loader fallback triggered after 10s. Proceeding to MenuScene.');
+      if (!this._loadComplete && !this._fallbackTriggered) {
+        this._fallbackTriggered = true;
+        console.warn('[Preload] fallback triggered after 10s — proceeding to MenuScene anyway.');
         if (this.loadingText) this.loadingText.setText('Carregando... (tempo esgotado)');
-        // proceed anyway to MenuScene to avoid stuck screen
         this.time.delayedCall(300, () => {
           if (this.loadingText) this.loadingText.destroy();
           this.scene.start('MenuScene');
@@ -142,59 +109,66 @@ class PreloadScene extends Phaser.Scene {
       }
     });
 
-    // Now actually queue assets (data URIs) — paths are valid data URIs, no 404s.
-    this.load.image('path_tile', ASSETS.path_tile);
-    this.load.image('calm_bg', ASSETS.calm_bg);
-    this.load.image('coin', ASSETS.coin);
-    this.load.image('spike', ASSETS.spike);
-    this.load.image('bat_up', ASSETS.bat_up);
-    this.load.image('bat_mid', ASSETS.bat_mid);
-    this.load.image('bat_down', ASSETS.bat_down);
+    // Queue assets (data URIs so não há 404)
+    try {
+      this.load.image('path_tile', ASSETS.path_tile);
+      this.load.image('calm_bg', ASSETS.calm_bg);
+      this.load.image('coin', ASSETS.coin);
+      this.load.image('spike', ASSETS.spike);
+      this.load.image('bat_up', ASSETS.bat_up);
+      this.load.image('bat_mid', ASSETS.bat_mid);
+      this.load.image('bat_down', ASSETS.bat_down);
+    } catch (err) {
+      console.error('[Preload] exception while queueing assets', err);
+    }
 
-    // Note: No explicit this.load.start() required — Phaser starts automatically.
+    // Note: Phaser starts the load automatically
   }
 
   create() {
-    // Nothing here; scene change happens in 'complete' handler above.
+    // nothing here; scene transition handled in 'complete' or fallback
+  }
+
+  // Reposition loading text on resize (helpful with RESIZE mode)
+  resize(width, height) {
+    if (this.loadingText) {
+      this.loadingText.setPosition(width/2, height/2);
+    }
   }
 }
 
-/* --- MenuScene (INTRO) --- */
+/* MenuScene (Intro) */
 class MenuScene extends Phaser.Scene {
   constructor() { super({ key: 'MenuScene' }); }
 
   create() {
-    const w = this.sys.game.config.width;
-    const h = this.sys.game.config.height;
+    const w = this.scale.width;
+    const h = this.scale.height;
 
-    // Background tile (dark)
-    this.bg = this.add.tileSprite(0, 0, w, h, 'path_tile').setOrigin(0).setTint(0x22335a);
+    // Background tiled
+    this.bg = this.add.tileSprite(0, 0, w, h, 'path_tile').setOrigin(0).setTint(0x0f1a2b);
 
-    // Title + instructions (simple)
-    this.add.text(w/2, h*0.13, 'Caminho do Morcego', { font: '22px Arial', fill: '#fff' }).setOrigin(0.5);
-    this.add.text(w/2, h*0.22, 'Toque na tela para subir/voar\nEvite espinhos, colete moedas', {
+    // Title and instructions
+    this.add.text(w/2, h*0.12, 'Caminho do Morcego', { font: '24px Arial', fill: '#fff' }).setOrigin(0.5);
+    this.add.text(w/2, h*0.2, 'Toque na tela para subir/voar\nEvite espinhos, colete moedas', {
       font: '14px Arial', fill: '#ddd', align: 'center'
     }).setOrigin(0.5);
 
-    // bat preview
-    this.add.image(w/2, h*0.45, 'bat_mid').setScale(1.6);
+    // Bat preview
+    this.add.image(w/2, h*0.45, 'bat_mid').setScale(2);
 
-    // Big start area: make whole screen respond to pointer to maximize mobile-friendliness
-    const startRect = this.add.rectangle(w/2, h*0.75, w*0.8, 64, 0xffffff).setInteractive({ useHandCursor: true });
-    const startTxt = this.add.text(w/2, h*0.75, 'Começar', { color: '#111', font: '20px Arial', fontWeight: '700' }).setOrigin(0.5);
-    startRect.on('pointerdown', () => {
+    // Start hint (we'll let any pointerdown start for convenience)
+    const startHint = this.add.text(w/2, h*0.78, 'Toque para começar', { font: '18px Arial', fill: '#fff' }).setOrigin(0.5);
+
+    // Start on any pointerdown (touch or mouse)
+    this.input.once('pointerdown', () => {
+      console.log('[Menu] starting GameScene');
       this.scene.start('GameScene', { coinsNeeded: 8 });
-    });
-
-    // Also allow tapping anywhere to start (optional small hint)
-    this.input.once('pointerdown', (pointer) => {
-      // protect: if pointer is over startRect it's already handled. So only if not started.
-      // We'll start only if y < some threshold? To avoid accidental immediate start, we do nothing on first tap.
     });
   }
 }
 
-/* --- GameScene (main) --- */
+/* GameScene (main gameplay) */
 class GameScene extends Phaser.Scene {
   constructor() { super({ key: 'GameScene' }); }
 
@@ -203,13 +177,13 @@ class GameScene extends Phaser.Scene {
   }
 
   create() {
-    const w = this.sys.game.config.width;
-    const h = this.sys.game.config.height;
+    const w = this.scale.width;
+    const h = this.scale.height;
 
     // Background
     this.bg = this.add.tileSprite(0, 0, w, h, 'path_tile').setOrigin(0);
 
-    // Groups
+    // Physics groups
     this.spikes = this.physics.add.group();
     this.coins = this.physics.add.group();
 
@@ -223,64 +197,50 @@ class GameScene extends Phaser.Scene {
     this.flapFrameIndex = 0;
     this.lastFlapTime = 0;
 
-    // Controls (pointerdown works for touch and mouse)
+    // Input: pointerdown (works for touch and mouse)
     this.input.on('pointerdown', this.flap, this);
 
-    // Spawn timers
-    this.obstacleTimer = this.time.addEvent({
-      delay: 1200,
-      callback: this.spawnObstacles,
-      callbackScope: this,
-      loop: true
-    });
-    this.coinTimer = this.time.addEvent({
-      delay: 900,
-      callback: this.spawnCoin,
-      callbackScope: this,
-      loop: true
-    });
+    // Timers to spawn obstacles and coins
+    this.obstacleTimer = this.time.addEvent({ delay: 1200, callback: this.spawnObstacles, callbackScope: this, loop: true });
+    this.coinTimer = this.time.addEvent({ delay: 900, callback: this.spawnCoin, callbackScope: this, loop: true });
 
-    // Overlaps
+    // Overlaps for collisions
     this.physics.add.overlap(this.bat, this.coins, this.collectCoin, null, this);
     this.physics.add.overlap(this.bat, this.spikes, this.hitSpike, null, this);
 
-    // HUD (rendered as Phaser Text on top of canvas)
+    // HUD (Phaser text)
     this.coinsCollected = 0;
     this.lives = 1;
     this.score = 0;
 
-    this.hudCoins = this.add.text(10, 10, `Moedas: 0/${this.coinsNeeded}`, { font: '14px Arial', fill: '#fff' }).setScrollFactor(0).setOrigin(0);
-    this.hudLives = this.add.text(10, 32, `Vidas: ${this.lives}`, { font: '14px Arial', fill: '#fff' }).setScrollFactor(0).setOrigin(0);
-    this.hudDistance = this.add.text(w - 10, 10, `Score: 0`, { font: '14px Arial', fill: '#fff' }).setScrollFactor(0).setOrigin(1,0);
+    this.hudCoins = this.add.text(12, 12, `Moedas: 0/${this.coinsNeeded}`, { font: '14px Arial', fill: '#fff' }).setScrollFactor(0).setOrigin(0);
+    this.hudLives = this.add.text(12, 34, `Vidas: ${this.lives}`, { font: '14px Arial', fill: '#fff' }).setScrollFactor(0).setOrigin(0);
+    this.hudDistance = this.add.text(w - 12, 12, `Score: ${this.score}`, { font: '14px Arial', fill: '#fff' }).setScrollFactor(0).setOrigin(1,0);
 
-    // physics tweak: gravity comes from arcade config
+    // Physics initial impulse
     this.bat.setVelocityY(-120);
 
     // Distance scoring timer
-    this.scoreTimer = this.time.addEvent({
-      delay: 500,
-      loop: true,
-      callback: () => { this.score += 1; this.hudDistance.setText(`Score: ${this.score}`); }
-    });
+    this.scoreTimer = this.time.addEvent({ delay: 500, loop: true, callback: () => { this.score += 1; this.hudDistance.setText(`Score: ${this.score}`); } });
   }
 
   update(time, delta) {
-    // Background scroll
+    // Scroll background a uma velocidade relativa ao frame delta
     this.bg.tilePositionX += 0.5 * (delta/16);
 
-    // flap animation
+    // flap animation (simple frame swap)
     if (time - this.lastFlapTime > 120) {
       this.flapFrameIndex = (this.flapFrameIndex + 1) % this.flapFrames.length;
       this.bat.setTexture(this.flapFrames[this.flapFrameIndex]);
       this.lastFlapTime = time;
     }
 
-    // cleanup off-screen
+    // cleanup off-screen children
     this.spikes.children.iterate((s) => { if (s && s.x < -40) s.destroy(); });
     this.coins.children.iterate((c) => { if (c && c.x < -40) c.destroy(); });
 
-    // out-of-bounds
-    if (this.bat.y > this.sys.game.config.height + 30 || this.bat.y < -40) {
+    // out-of-bounds check (bottom or top too far)
+    if (this.bat.y > this.scale.height + 40 || this.bat.y < -60) {
       this.endOrRespawn();
     }
 
@@ -291,23 +251,26 @@ class GameScene extends Phaser.Scene {
   }
 
   flap() {
+    // Impulso vertical para subir (touch/mouse)
+    if (!this.bat || !this.bat.body) return;
     this.bat.setVelocityY(-260);
+    // small visual tilt
     this.tweens.add({ targets: this.bat, angle: -12, duration: 120, yoyo: true, ease: 'Sine.easeInOut' });
   }
 
   spawnObstacles() {
-    const h = this.sys.game.config.height;
+    const h = this.scale.height;
     const spawnY = Phaser.Math.Between(h*0.2, h*0.86);
-    const spike = this.spikes.create(this.sys.game.config.width + 40, spawnY, 'spike');
+    const spike = this.spikes.create(this.scale.width + 40, spawnY, 'spike');
     spike.body.allowGravity = false;
     spike.setVelocityX(-180);
     spike.body.setSize(22,22).setOffset(5,4);
   }
 
   spawnCoin() {
-    const h = this.sys.game.config.height;
+    const h = this.scale.height;
     const spawnY = Phaser.Math.Between(h*0.2, h*0.7);
-    const coin = this.coins.create(this.sys.game.config.width + 40, spawnY, 'coin');
+    const coin = this.coins.create(this.scale.width + 40, spawnY, 'coin');
     coin.body.allowGravity = false;
     coin.setVelocityX(-160);
     coin.setScale(1.2);
@@ -331,13 +294,16 @@ class GameScene extends Phaser.Scene {
   }
 
   endOrRespawn() {
+    // Restart the scene to keep it simple
+    console.log('[Game] respawn/restart');
     this.scene.restart({ coinsNeeded: this.coinsNeeded });
   }
 
   finishLevel() {
-    this.obstacleTimer.remove(false);
-    this.coinTimer.remove(false);
-    this.scoreTimer.remove(false);
+    // Stop timers and transition to end scene
+    if (this.obstacleTimer) this.obstacleTimer.remove(false);
+    if (this.coinTimer) this.coinTimer.remove(false);
+    if (this.scoreTimer) this.scoreTimer.remove(false);
     this.cameras.main.fade(600, 0,0,0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
       this.scene.start('EndScene', { coins: this.coinsCollected, score: this.score });
@@ -345,7 +311,7 @@ class GameScene extends Phaser.Scene {
   }
 }
 
-/* --- EndScene (final calm + dialogues) --- */
+/* EndScene (final calm + dialogues) */
 class EndScene extends Phaser.Scene {
   constructor() { super({ key: 'EndScene' }); }
 
@@ -355,8 +321,9 @@ class EndScene extends Phaser.Scene {
   }
 
   create() {
-    const w = this.sys.game.config.width;
-    const h = this.sys.game.config.height;
+    const w = this.scale.width;
+    const h = this.scale.height;
+
     this.add.image(0,0,'calm_bg').setOrigin(0).setDisplaySize(w,h);
 
     this.add.image(w*0.36, h*0.5, 'bat_mid').setScale(2.2);
@@ -369,14 +336,17 @@ class EndScene extends Phaser.Scene {
     ];
     this.msgIndex = 0;
 
+    // Dialogue background (white rectangle)
     this.dialogBg = this.add.rectangle(w/2, h*0.78, w*0.88, 82, 0xffffff, 1).setStrokeStyle(2, 0xcccccc);
     this.dialogText = this.add.text(w/2, h*0.78, "", { color: '#111', font: '16px Arial', align: 'center', wordWrap: { width: w*0.8 } }).setOrigin(0.5);
 
+    // Any tap advances dialog
     this.input.on('pointerdown', () => this.advanceDialog());
 
     this.showMessage(this.messages[this.msgIndex]);
     this.heart = this.add.text(w/2, h*0.62, '💖', { fontSize: '48px' }).setOrigin(0.5).setAlpha(0);
 
+    // Buttons (rectangles + text)
     this.restartBtn = this.add.rectangle(w*0.32, h*0.9, w*0.38, 40, 0x2b8a78).setInteractive();
     this.restartTxt = this.add.text(w*0.32, h*0.9, 'Reiniciar', { color: '#fff', font: '16px Arial', fontWeight: '700' }).setOrigin(0.5);
     this.homeBtn = this.add.rectangle(w*0.68, h*0.9, w*0.38, 40, 0x5366f2).setInteractive();
@@ -397,33 +367,49 @@ class EndScene extends Phaser.Scene {
     } else {
       this.dialogText.setText("...");
       this.tweens.add({ targets: this.heart, alpha: 1, scale: { from: 0.6, to: 1 }, duration: 600, ease: 'Back' });
-      this.add.text(this.sys.game.config.width/2, this.sys.game.config.height*0.7, `Moedas coletadas: ${this.finalCoins}\nScore: ${this.finalScore}`, { color: '#064', font: '14px Arial', align: 'center' }).setOrigin(0.5);
+      this.add.text(this.scale.width/2, this.scale.height*0.7, `Moedas coletadas: ${this.finalCoins}\nScore: ${this.finalScore}`, { color: '#064', font: '14px Arial', align: 'center' }).setOrigin(0.5);
     }
   }
 }
 
 /* ===========================
-   Boot the game (config)
+   Game config and boot
    =========================== */
 
-const GAME_WIDTH = 360;
-const GAME_HEIGHT = 640;
-
+/*
+  Important: use Phaser.Scale.RESIZE so the canvas resizes to the viewport.
+  This helps remove "borders" and works better across different mobile aspect ratios.
+*/
 const config = {
   type: Phaser.AUTO,
   parent: 'game-container',
-  width: GAME_WIDTH,
-  height: GAME_HEIGHT,
   backgroundColor: '#000000',
   physics: {
     default: 'arcade',
     arcade: { gravity: { y: 600 }, debug: false }
   },
   scale: {
-    mode: Phaser.Scale.FIT,
+    mode: Phaser.Scale.RESIZE,          // <-- resize canvas to fit the container / viewport
     autoCenter: Phaser.Scale.CENTER_BOTH
+    // width/height not required; Phaser will use container size / window size
   },
   scene: [PreloadScene, MenuScene, GameScene, EndScene]
 };
 
-const game = new Phaser.Game(config);
+// Create game instance once DOM is ready
+window.addEventListener('load', () => {
+  try {
+    window.game = new Phaser.Game(config);
+    console.log('[Boot] Phaser game created');
+  } catch (err) {
+    console.error('[Boot] failed to create Phaser game', err);
+  }
+});
+
+// Optional: log resize events for debug
+window.addEventListener('resize', () => {
+  if (window.game && window.game.scale) {
+    // Phaser.Scale.RESIZE will handle layout, but we log for debug
+    console.log('[Window] resized to', window.innerWidth, window.innerHeight);
+  }
+});
