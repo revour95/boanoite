@@ -1,42 +1,26 @@
-<!--
-Jogo 2D Pixelado — Versão SIMPLIFICADA (Noite Tranquila)
-Seguindo o modelo e roteiro enviado pelo usuário. Referência do roteiro/anexo: fileciteturn0file0
-
-Resumo da interface simplificada:
-- Tela 1 (INTRO): Tela única com instruções curtas e botão grande "COMEÇAR".
-- Tela 2 (JOGO): HUD mínimo — apenas % de "Calma" no canto superior esquerdo e botão de mudo no canto superior direito. Sem textos extras. Controles: toque/Espaço para bater as asas.
-- Tela 3 (FINAL): Cena calma com diálogo em sequência: "Você chegou" / "Eu estava com saudade" / "Sinto algo lindo em você" / "É muito mais do que sonhei para mim" + coração.
-
-Observações técnicas:
-- Todos os assets (sprites e ícones) são gerados dinamicamente no mesmo arquivo (sem arquivos externos) para facilitar deploy no GitHub Pages.
-- Mecânica: colecione lanternas (ou "moedinhas"); não há morte — colisões atrapalham e reduzem calma.
-- O jogo termina quando o medidor de calma enche ou o jogador chega ao fim do caminho; então transita para a tela final.
-
-Como usar:
-- Salve como `index.html` e abra no navegador (Chrome/Firefox). Para hospedar: coloque no GitHub Pages (branch main, pasta /).
-- Toque no botão "COMEÇAR" para iniciar.
-
---- Código (arquivo único index.html) ---
-
 <!doctype html>
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Noite Tranquila — Morceguinho (Simplificado)</title>
+<title>Noite Tranquila — Morceguinho</title>
 <style>
-  :root{--bg:#041022;--ground:#072426;--accent:#ffd97d;--text:#e6f7f2}
+  :root{
+    --bg1:#071427; --bg2:#021018; --ground:#082d28; --accent:#ffd97d; --text:#e6f7f2;
+  }
   html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--text)}
-  body{background:linear-gradient(180deg,var(--bg),#021018);display:flex;align-items:center;justify-content:center}
-  #wrap{width:100%;max-width:900px;height:100vh;display:flex;flex-direction:column}
+  body{background:linear-gradient(180deg,var(--bg1),var(--bg2));display:flex;align-items:center;justify-content:center}
+  #wrap{width:100%;max-width:980px;height:100vh;display:flex;flex-direction:column}
   header{height:56px;display:flex;align-items:center;justify-content:space-between;padding:8px 12px}
   #calma{font-weight:700}
   button{background:transparent;border:1px solid rgba(255,255,255,0.06);color:inherit;padding:8px 12px;border-radius:10px}
   canvas{display:block;width:100%;height:calc(100vh - 56px);touch-action:none}
   #overlay{position:absolute;left:0;right:0;top:56px;bottom:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-  .panel{pointer-events:auto;background:rgba(0,0,0,0.5);padding:18px;border-radius:12px;color:white;max-width:92%;text-align:center}
-  .start-btn{font-size:20px;padding:12px 20px;border-radius:12px;border:none;background:var(--accent);color:#072;font-weight:800}
-  .dialog{font-size:18px;margin-top:8px}
+  .panel{pointer-events:auto;background:rgba(0,0,0,0.55);padding:18px;border-radius:12px;color:white;max-width:92%;text-align:center}
+  .start-btn{font-size:18px;padding:12px 20px;border-radius:12px;border:none;background:var(--accent);color:#072;font-weight:800}
+  .dialog{font-size:18px;margin-top:8px;line-height:1.25}
+  .small{font-size:13px;color:rgba(255,255,255,0.85)}
+  #restartSimple{display:none}
 </style>
 </head>
 <body>
@@ -54,112 +38,367 @@ Como usar:
   </div>
 
 <script>
-// Versão simplificada do jogo — standalone
+/*
+  Noite Tranquila — Versão fiel ao roteiro do usuário.
+  Salve como index.html e abra no navegador.
+*/
 (() => {
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
-  const calmaEl = document.getElementById('calma');
   const overlay = document.getElementById('overlay');
+  const calmaEl = document.getElementById('calma');
   const muteBtn = document.getElementById('mute');
 
-  let dpr = Math.max(1, window.devicePixelRatio || 1);
+  let DPR = Math.max(1, window.devicePixelRatio || 1);
   let W = 360, H = 640;
-  function resize(){ dpr = Math.max(1, window.devicePixelRatio || 1); canvas.width = Math.floor(canvas.clientWidth * dpr); canvas.height = Math.floor((window.innerHeight - 56) * dpr); ctx.setTransform(dpr,0,0,dpr,0,0); W = canvas.width/dpr; H = canvas.height/dpr; }
+  function resize(){
+    DPR = Math.max(1, window.devicePixelRatio || 1);
+    canvas.width = Math.floor(canvas.clientWidth * DPR);
+    canvas.height = Math.floor((window.innerHeight - 56) * DPR);
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    W = canvas.width / DPR; H = canvas.height / DPR;
+  }
   window.addEventListener('resize', resize);
 
   // Game state
-  let running = false;
-  let calm = 0; let distance = 0; let inFinal = false;
-  let obstacles = [], coins = [];
-  let player;
-  let spawnT = 0, spawnInterval = 1.1; let baseSpeed = 140; let speed = baseSpeed;
-  let last = performance.now(); let muted = false;
+  let running = false, inFinal = false;
+  let lastT = performance.now();
+  let player = null;
+  let obstacles = [], lanterns = [];
+  let spawnTimer = 0, spawnInterval = 1.05;
+  let speed = 140, baseSpeed = 140;
+  let calm = 0, distance = 0;
+  const CALM_TARGET = 100;
 
-  // --- simple pixel sprites (drawn on small canvases) ---
-  function makeSprite(w,h,draw){ const c=document.createElement('canvas'); c.width=w;c.height=h; const g=c.getContext('2d'); g.imageSmoothingEnabled=false; draw(g); return c; }
-
-  const batFrames = [];
-  for(let i=0;i<3;i++) batFrames.push(makeSprite(24,18,(g)=>{
-    g.clearRect(0,0,24,18);
-    g.fillStyle='#98e2a0'; g.fillRect(10,6,4,6); g.fillRect(11,4,2,2);
-    g.fillStyle='#5ea57b'; if(i===1){ g.fillRect(2,4,6,3); g.fillRect(16,4,6,3); } else if(i===0){ g.fillRect(3,6,5,2); g.fillRect(16,6,5,2); } else { g.fillRect(4,8,5,2); g.fillRect(15,8,5,2); }
-    g.fillStyle='#072'; g.fillRect(13,7,2,2);
-  }));
-
-  const coinSprite = makeSprite(12,12,(g)=>{ g.clearRect(0,0,12,12); const grad=g.createRadialGradient(6,6,1,6,6,6); grad.addColorStop(0,'#fff2c9'); grad.addColorStop(1,'#ffd27a'); g.fillStyle=grad; g.fillRect(0,0,12,12); });
-  const thorn = makeSprite(28,28,(g)=>{ g.clearRect(0,0,28,28); g.fillStyle='#1b2b2a'; g.fillRect(0,18,28,10); g.fillStyle='#2b3c3a'; g.beginPath(); g.moveTo(3,18); g.lineTo(9,6); g.lineTo(15,18); g.fill(); g.beginPath(); g.moveTo(16,18); g.lineTo(21,5); g.lineTo(25,18); g.fill(); });
-
-  function makePlayer(){ return {x:60,y:H/2,w:28,h:18,vy:0,frame:0,ft:0}; }
-
-  // --- Intro screen (simple) ---
-  function showIntro(){ overlay.innerHTML=''; const p=document.createElement('div'); p.className='panel'; p.style.maxWidth='420px'; p.innerHTML = '<div style="font-size:20px;font-weight:800">Noite Tranquila</div><div style="margin-top:8px">Toque para bater as asas. Colete as luzes para encher sua calma.</div>';
-    const btn=document.createElement('button'); btn.className='start-btn'; btn.textContent='COMEÇAR'; btn.style.marginTop='12px'; btn.addEventListener('click', ()=>{ overlay.innerHTML=''; startGame(); }); p.appendChild(btn); overlay.appendChild(p); }
-
-  // --- start/reset ---
-  function reset(){ player = makePlayer(); obstacles=[]; coins=[]; calm=0; distance=0; inFinal=false; speed=baseSpeed; running=false; }
-  function startGame(){ running=true; last=performance.now(); }
-
-  // --- spawn ---
-  function spawnObstacle(){ const h=28+Math.random()*60; obstacles.push({x:W+20,y:H-100-h,w:24,h}); }
-  function spawnCoin(){ coins.push({x:W+20,y:120+Math.random()*(H-260),r:8}); }
-
-  // --- collisions ---
-  function rectOverlap(a,b){ return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + (b.h||b.r) && a.y + a.h > b.y; }
-
-  // --- final screen ---
-  function showFinal(){ overlay.innerHTML=''; inFinal=true; running=false; const p=document.createElement('div'); p.className='panel'; p.style.maxWidth='480px';
-    const msgs = ['Você chegou','Eu estava com saudade','Sinto algo lindo em você','É muito mais do que sonhei para mim ❤️'];
-    const dialog = document.createElement('div'); dialog.className='dialog'; dialog.style.fontWeight='700'; p.appendChild(dialog);
-    let i=0; function showNext(){ if(i>=msgs.length){ const b=document.createElement('button'); b.className='start-btn'; b.textContent='Fechar'; b.style.marginTop='12px'; b.addEventListener('click', ()=>{ overlay.innerHTML=''; }); p.appendChild(b); return; } dialog.textContent = msgs[i++]; setTimeout(showNext,1400); }
-    showNext(); overlay.appendChild(p);
-  }
-
-  // --- simple audio chime ---
-  let audioCtx, master;
-  function ensureAudio(){ if(muted) return; if(!audioCtx){ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); master = audioCtx.createGain(); master.gain.value=0.6; master.connect(audioCtx.destination); } }
-  function chime(){ if(muted) return; ensureAudio(); if(!audioCtx) return; const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.type='sine'; o.frequency.value=880; o.connect(g); g.connect(master); g.gain.value=0.001; o.start(); g.gain.linearRampToValueAtTime(0.06,audioCtx.currentTime+0.02); g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+0.8); o.stop(audioCtx.currentTime+1); }
-
-  // --- input ---
-  function flap(){ if(!running){ startGame(); return; } player.vy = -420; }
-  canvas.addEventListener('touchstart',(e)=>{ e.preventDefault(); flap(); },{passive:false}); canvas.addEventListener('mousedown',()=>flap()); window.addEventListener('keydown',(e)=>{ if(e.code==='Space'){ e.preventDefault(); flap(); } });
-
-  muteBtn.addEventListener('click', ()=>{ muted = !muted; muteBtn.textContent = muted ? '🔇' : '🔊'; if(muted && audioCtx) try{ audioCtx.suspend(); }catch(e){} if(!muted && audioCtx) try{ audioCtx.resume(); }catch(e){} });
-
-  // --- update/draw ---
-  function update(dt){ if(!running) return; distance += speed*dt; spawnT -= dt; if(spawnT<=0){ spawnT = spawnInterval*(0.7+Math.random()*0.8); if(Math.random()<0.6) spawnCoin(); spawnObstacle(); }
-    // coins
-    for(let i=coins.length-1;i>=0;i--){ const c=coins[i]; c.x -= speed*dt; if(rectOverlap(player,{x:c.x-r, y:c.y-r, w:c.r*2, h:c.r*2})){ coins.splice(i,1); calm += 12; chime(); } else if(c.x < -40) coins.splice(i,1); }
-    // obstacles
-    for(let i=obstacles.length-1;i>=0;i--){ const o=obstacles[i]; o.x -= speed*dt; if(rectOverlap(player,o)){ // collision: small pushback
-        player.x = Math.max(20, player.x-20); calm = Math.max(0, calm-6); o.x += 80; }
-      if(o.x + o.w < -50) obstacles.splice(i,1);
+  // Audio
+  let audioCtx = null, masterGain = null, ambient = null;
+  let muted = false;
+  function ensureAudio(){
+    if(muted) return;
+    if(!audioCtx){
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      masterGain = audioCtx.createGain(); masterGain.gain.value = 0.6; masterGain.connect(audioCtx.destination);
     }
-    // physics
-    player.vy += 1400*dt; player.y += player.vy*dt; const ground = H-100-player.h; if(player.y > ground){ player.y = ground; player.vy = 0; }
-    // frames
-    player.ft += dt*12; if(player.ft>1){ player.frame++; player.ft=0; }
-    // check finish
-    if(calm >= 100 || distance > 2200) showFinal();
+  }
+  function startAmbient(){
+    if(muted) return;
+    ensureAudio(); if(!audioCtx) return;
+    stopAmbient();
+    ambient = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    ambient.type = 'sine';
+    ambient.frequency.value = 180;
+    ambient.connect(g); g.gain.value = 0.0015; g.connect(masterGain);
+    const lfo = audioCtx.createOscillator(); lfo.frequency.value = 0.14;
+    const lfoGain = audioCtx.createGain(); lfoGain.gain.value = 0.6;
+    lfo.connect(lfoGain); lfoGain.connect(g.gain); lfo.start();
+    ambient._lfo = lfo;
+    ambient.start();
+  }
+  function stopAmbient(){ if(ambient){ try{ ambient._lfo.stop(); ambient.stop(); }catch(e){} ambient = null; } }
+  function playChime(){
+    if(muted) return; ensureAudio(); if(!audioCtx) return;
+    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+    o.type = 'triangle'; o.frequency.value = 880;
+    o.connect(g); g.connect(masterGain); g.gain.value = 0.001;
+    o.start();
+    g.gain.linearRampToValueAtTime(0.07, audioCtx.currentTime + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.9);
+    o.stop(audioCtx.currentTime + 1.0);
   }
 
-  function draw(){ ctx.clearRect(0,0,W,H);
+  // Pixel sprites (offscreen canvases)
+  function makeSprite(w,h,drawFn){
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
+    drawFn(g, w, h); return c;
+  }
+
+  // Bat frames  (simple 3-frame pixel bat)
+  const batFrames = [];
+  for(let f=0; f<3; f++){
+    batFrames.push(makeSprite(32,24,(g)=>{
+      g.clearRect(0,0,32,24);
+      // scale-friendly block drawing
+      // body
+      g.fillStyle = '#9BE7B0';
+      g.fillRect(14,10,4,6); // body
+      g.fillRect(15,8,2,2); // head
+      // wing shapes depend on f
+      g.fillStyle = '#4DA67E';
+      if(f===1){
+        g.fillRect(6,6,8,3);
+        g.fillRect(18,6,8,3);
+      } else if(f===0){
+        g.fillRect(8,9,6,2);
+        g.fillRect(18,9,6,2);
+      } else {
+        g.fillRect(9,12,5,2);
+        g.fillRect(18,12,5,2);
+      }
+      // eye
+      g.fillStyle = '#04261f'; g.fillRect(17,10,1,1);
+    }));
+  }
+
+  // Lantern coin sprite
+  const lanternSprite = makeSprite(14,14,(g)=>{
+    g.clearRect(0,0,14,14);
+    const grad = g.createRadialGradient(7,7,1,7,7,8);
+    grad.addColorStop(0,'rgba(255,240,200,1)');
+    grad.addColorStop(1,'rgba(255,200,100,0)');
+    g.fillStyle = grad; g.fillRect(0,0,14,14);
+    g.fillStyle = '#fff4d9'; g.fillRect(6,6,2,2);
+  });
+
+  // Thorn obstacle
+  const thornSprite = makeSprite(28,28,(g)=>{
+    g.clearRect(0,0,28,28);
+    g.fillStyle = '#072a27'; g.fillRect(0,18,28,10);
+    g.fillStyle = '#163c38';
+    g.beginPath(); g.moveTo(3,18); g.lineTo(9,6); g.lineTo(15,18); g.fill();
+    g.beginPath(); g.moveTo(16,18); g.lineTo(21,5); g.lineTo(25,18); g.fill();
+  });
+
+  // Utility
+  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+
+  // Player factory
+  function makePlayer(){ return {x:60, y: H/2, w:28, h:18, vy:0, frame:0, frameT:0}; }
+
+  // Intro screen
+  function showIntro(){
+    overlay.innerHTML = '';
+    const p = document.createElement('div'); p.className = 'panel';
+    p.style.maxWidth = '420px';
+    p.innerHTML = `<div style="font-size:20px;font-weight:800">Noite Tranquila</div>
+      <div class="small" style="margin-top:8px">Toque para bater as asas. Colete as luzes para encher sua calma. Não se preocupe — não há vidas, apenas aconchego.</div>`;
+    const btn = document.createElement('button'); btn.className='start-btn'; btn.textContent='COMEÇAR';
+    btn.style.marginTop='12px'; btn.addEventListener('click', ()=>{
+      overlay.innerHTML = '';
+      // start audio on user gesture
+      try{ if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }catch(e){}
+      startGame();
+    });
+    p.appendChild(btn);
+    overlay.appendChild(p);
+  }
+
+  // Final dialog (sequence)
+  const finalMessages = [
+    "Você chegou",
+    "Eu estava com saudade",
+    "Sinto algo lindo em você",
+    "É muito mais do que sonhei para mim ❤️"
+  ];
+
+  let finalShown = false;
+  function showFinal(){
+    if(finalShown) return;
+    finalShown = true;
+    running = false;
+    stopAmbient();
+    overlay.innerHTML = '';
+    const p = document.createElement('div'); p.className='panel'; p.style.maxWidth='480px';
+    // small bat portrait
+    const portrait = document.createElement('canvas'); portrait.width = 96; portrait.height = 64;
+    const pg = portrait.getContext('2d'); pg.imageSmoothingEnabled = false;
+    pg.fillStyle = '#05282b'; pg.fillRect(0,0,portrait.width,portrait.height);
+    pg.drawImage(batFrames[1], 20,8,56,56);
+    p.appendChild(portrait);
+    const dialog = document.createElement('div'); dialog.className='dialog'; dialog.style.fontWeight='700';
+    p.appendChild(dialog);
+    overlay.appendChild(p);
+    // show messages with small delay
+    let idx = 0;
+    function nextMsg(){
+      if(idx >= finalMessages.length){
+        const close = document.createElement('button'); close.className='start-btn'; close.textContent='Reiniciar';
+        close.style.marginTop='12px'; close.addEventListener('click', ()=>{ overlay.innerHTML=''; restart(); });
+        p.appendChild(close);
+        return;
+      }
+      dialog.textContent = finalMessages[idx++];
+      playChime();
+      setTimeout(nextMsg, 1400);
+    }
+    setTimeout(nextMsg, 400);
+  }
+
+  // Spawning
+  function spawnObstacle(){
+    const h = 28 + Math.random()*60;
+    obstacles.push({x: W + 20, y: H - 100 - h, w: 24, h: h});
+  }
+  function spawnLantern(){
+    const y = 120 + Math.random()*(H - 260);
+    lanterns.push({x: W + 20, y: y, r: 10});
+  }
+
+  // Start / Reset
+  function reset(){
+    player = makePlayer();
+    obstacles = []; lanterns = [];
+    calm = 0; distance = 0; speed = baseSpeed; spawnTimer = 0; finalShown = false; inFinal = false;
+    running = false;
+  }
+  function startGame(){
+    running = true; lastT = performance.now(); // start ambient
+    try{ // resume audio on user gesture
+      if(!audioCtx) ensureAudio();
+      if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    }catch(e){}
+    startAmbient();
+  }
+
+  // Collisions
+  function rectsOverlap(a,b){
+    return a.x < b.x + (b.w||b.r*2) && a.x + a.w > b.x && a.y < b.y + (b.h||b.r*2) && a.y + a.h > b.y;
+  }
+
+  // Input
+  function flap(){
+    if(!running){ startGame(); return; }
+    player.vy = -420;
+  }
+  canvas.addEventListener('touchstart', (e)=>{ e.preventDefault(); flap(); }, {passive:false});
+  canvas.addEventListener('mousedown', (e)=>{ flap(); });
+  window.addEventListener('keydown', (e)=>{ if(e.code === 'Space'){ e.preventDefault(); flap(); } });
+
+  muteBtn.addEventListener('click', ()=>{
+    muted = !muted; muteBtn.textContent = muted ? '🔇' : '🔊';
+    if(muted){ stopAmbient(); if(audioCtx) audioCtx.suspend && audioCtx.suspend(); } else { if(audioCtx) audioCtx.resume && audioCtx.resume(); startAmbient(); }
+  });
+
+  // Update / Draw loop
+  function update(dt){
+    if(!running) return;
+    distance += speed * dt;
+    spawnTimer -= dt;
+    if(!inFinal){
+      if(spawnTimer <= 0){
+        spawnTimer = spawnInterval * (0.7 + Math.random()*0.8);
+        // spawn obstacles and lanterns with probability
+        if(Math.random() < 0.7) spawnObstacle();
+        if(Math.random() < 0.6) spawnLantern();
+      }
+      // lanterns move
+      for(let i = lanterns.length - 1; i >= 0; i--){
+        const L = lanterns[i];
+        L.x -= speed * dt;
+        if(rectsOverlap(player, {x: L.x - L.r, y: L.y - L.r, w: L.r*2, h: L.r*2})){
+          lanterns.splice(i,1); calm = clamp(calm + 12 + Math.random()*6, 0, CALM_TARGET); playChime();
+        } else if(L.x < -40) lanterns.splice(i,1);
+      }
+      // obstacles
+      for(let i = obstacles.length - 1; i >= 0; i--){
+        const o = obstacles[i];
+        o.x -= speed * dt;
+        if(rectsOverlap(player, o)){
+          // gentle penalty
+          player.x = Math.max(20, player.x - 22);
+          calm = clamp(calm - 6, 0, CALM_TARGET);
+          o.x += 90; // push obstacle to avoid repeated collision
+        }
+        if(o.x + o.w < -60) obstacles.splice(i,1);
+      }
+      // increase speed slightly
+      speed += 2 * dt;
+      // check transition
+      if(calm >= CALM_TARGET || distance > 2200){
+        enterCalmZone();
+      }
+    } else {
+      // calm zone: slow down and drift lanterns
+      for(let i=lanterns.length-1;i>=0;i--){
+        const L = lanterns[i]; L.x -= speed*0.25 * dt; L.y += Math.sin((distance + i*40)/200) * 6 * dt;
+        if(L.x < -40) lanterns.splice(i,1);
+      }
+      speed = Math.max(40, speed - 20 * dt);
+      if(speed <= 48) showFinal();
+    }
+
+    // player physics
+    player.vy += 1400 * dt;
+    player.y += player.vy * dt;
+    const groundY = H - 100 - player.h;
+    if(player.y > groundY){ player.y = groundY; player.vy = 0; }
+    // animate frames
+    player.frameT += dt * 12;
+    if(player.frameT > 1){ player.frame++; player.frameT = 0; }
+  }
+
+  function enterCalmZone(){
+    inFinal = true;
+    // spawn a bunch of lanterns to beautify scene
+    for(let i=0;i<18;i++){
+      lanterns.push({x: W + 40 + i*30, y: 120 + Math.random()*(H - 260), r: 10});
+    }
+    playChime();
+    // change ambient slowly
+    if(audioCtx && ambient){
+      try{ ambient.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 6); }catch(e){}
+    }
+  }
+
+  function draw(){
     // background
-    const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#071427'); g.addColorStop(1,'#021018'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    ctx.clearRect(0,0,W,H);
+    if(!inFinal){
+      const g = ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#071427'); g.addColorStop(1,'#021018');
+      ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+      // distant hills
+      ctx.fillStyle = 'rgba(20,30,30,0.6)'; for(let i=0;i<3;i++){ ctx.beginPath(); ctx.ellipse(80 + i*220, H-160 - i*30, 200,80,0,0,Math.PI*2); ctx.fill(); }
+    } else {
+      const g = ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#032f2c'); g.addColorStop(1,'#083a36');
+      ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+      // soft glows
+      for(let i=0;i<10;i++){
+        const x = (i*73) % W; const y = 60 + (i*53) % (H-160);
+        const rad = 26 + (i%3)*8; const grd = ctx.createRadialGradient(x,y,1,x,y,rad);
+        grd.addColorStop(0,'rgba(200,250,230,0.11)'); grd.addColorStop(1,'rgba(200,250,230,0)');
+        ctx.fillStyle = grd; ctx.fillRect(x-rad,y-rad,rad*2,rad*2);
+      }
+    }
+
     // ground
-    ctx.fillStyle='#072426'; ctx.fillRect(0,H-100,W,100);
-    // draw coins
-    for(const c of coins){ ctx.drawImage(coinSprite, c.x-6, c.y-6, 12,12); }
+    const gy = H - 100;
+    ctx.fillStyle = inFinal ? '#06362f' : '#082d28';
+    ctx.fillRect(0, gy, W, 100);
+
+    // lanterns
+    for(const L of lanterns){
+      ctx.drawImage(lanternSprite, L.x - 7, L.y - 7, 14, 14);
+    }
     // obstacles
-    for(const o of obstacles){ ctx.drawImage(thorn, o.x, o.y-2, o.w, o.h+4); }
+    for(const o of obstacles){
+      ctx.drawImage(thornSprite, o.x, o.y - 2, o.w, o.h + 4);
+    }
     // player
-    const f = Math.floor(player.frame)%batFrames.length; ctx.drawImage(batFrames[f], player.x-6, player.y-4, player.w+12, player.h+12);
-    calm = Math.max(0, calm); calmaEl.textContent = 'Calma: ' + Math.min(100, Math.floor(calm)) + '%';
+    const f = Math.floor(player.frame) % batFrames.length;
+    ctx.drawImage(batFrames[f], player.x - 6, player.y - 4, player.w + 12, player.h + 12);
+
+    // HUD calm %
+    calmaEl.textContent = 'Calma: ' + Math.min(100, Math.floor(calm)) + '%';
   }
 
-  function loop(t){ const dt=Math.min(0.033,(t-last)/1000); last=t; update(dt); draw(); requestAnimationFrame(loop); }
+  function loop(t){
+    const dt = Math.min(0.033, (t - lastT)/1000); lastT = t;
+    update(dt); draw();
+    requestAnimationFrame(loop);
+  }
+
+  // Restart helper
+  function restart(){
+    reset(); showIntro();
+  }
 
   // init
   resize(); reset(); showIntro(); requestAnimationFrame(loop);
+
+  // Expose a reliable restart button (for dev)
+  window.__restartGame = restart;
+
 })();
 </script>
 </body>
