@@ -16,23 +16,22 @@
     img.media{max-width:92%;height:auto;border-radius:8px;display:block}
     .btn{appearance:none;border:0;border-radius:12px;background:var(--accent);color:#fff;padding:12px 16px;font-weight:700;font-size:16px;width:90%;max-width:420px}
 
-    /* Layout variants to avoid repetition */
-    .layout-a{display:flex;flex-direction:column;gap:12px}
-    .layout-b{display:flex;flex-direction:row;gap:12px;align-items:center}
-    .layout-c{display:flex;flex-direction:column;gap:12px;align-items:flex-start}
-    .layout-d{display:flex;flex-direction:column;gap:12px;align-items:center}
+    /* Small interactive decorations */
+    .heart-btn{background:transparent;border:0;font-size:28px;cursor:pointer}
+    .float-heart{position:fixed;left:50%;transform:translateX(-50%);bottom:100px;font-size:22px;pointer-events:none;animation:rise 1400ms ease-out forwards}
+    @keyframes rise{0%{transform:translate(-50%,0) scale(1);opacity:1}100%{transform:translate(-50%,-220px) scale(1.4);opacity:0}}
 
-    /* Responsive adjustments */
-    @media (max-width:520px){
-      .layout-b{flex-direction:column;align-items:center}
-      .layout-c{align-items:center}
-      h1{font-size:20px}
-      h2{font-size:18px}
-    }
+    .peek{opacity:0;transform:translateY(6px);transition:all .28s ease;max-width:92%}
+    .peek.show{opacity:1;transform:translateY(0)}
+
+    .sparkle{position:fixed;pointer-events:none;mix-blend-mode:screen}
+    @keyframes pop{0%{transform:scale(0);opacity:1}100%{transform:scale(1.4);opacity:0}}
+
+    /* Responsive */
+    @media (max-width:520px){ h1{font-size:20px} h2{font-size:18px} }
   </style>
 </head>
 <body>
-  <!-- Minimal pages: gif files expected at assets/gif1.gif ... gif5.gif -->
   <main>
     <!-- Page 1: preserve original short texts, gif1 centered -->
     <section class="page layout-a" data-index="0">
@@ -43,42 +42,56 @@
       <button class="btn next">Próxima</button>
     </section>
 
-    <!-- Page 2: layout B — gif left, texts stacked on right (collapses to column on small screens) -->
+    <!-- Page 2: gif left, two playful texts and a heart button that envia coraçõezinhos -->
     <section class="page layout-b" data-index="1" style="display:none">
       <img class="media" src="assets/gif2.gif" alt="gif 2" style="width:44%;max-width:220px" />
       <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start;max-width:420px">
-        <h2>Placeholder — Texto A</h2>
-        <p>Placeholder — Texto B com complemento curto.</p>
+        <h2>Quando penso em você, até o céu fica mais leve.</h2>
+        <p>Você merece um sorriso agora — toque o coração.</p>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="heart-btn" id="heartBtn" aria-label="Mandar coração">❤️</button>
+          <small style="color:#666">Toque para enviar um coração animado</small>
+        </div>
       </div>
       <button class="btn next" style="width:140px;">Próxima</button>
     </section>
 
-    <!-- Page 3: layout C — text 1, big centered gif, text 2 underneath -->
+    <!-- Page 3: big centered gif, two texts where "esconderijo" aparece ao tocar (peek) -->
     <section class="page layout-c" data-index="2" style="display:none">
       <div style="max-width:520px;width:100%">
-        <h2 style="margin-bottom:8px">Placeholder — Texto 1</h2>
+        <h2 style="margin-bottom:8px">Sabe quando alguém faz seu dia melhor?</h2>
         <img class="media" src="assets/gif3.gif" alt="gif 3" />
-        <p style="margin-top:10px">Placeholder — Texto 2 explicativo.</p>
+        <p style="margin-top:10px">Toque o botão pra receber uma surpresa curta.</p>
+        <div style="margin-top:8px">
+          <button class="btn" id="peekBtn" style="width:200px;margin:auto">Toque aqui 🥺</button>
+          <p class="peek" id="peekText">Você acabou de ganhar um sorriso meu — guardado só pra você ✨</p>
+        </div>
       </div>
       <button class="btn next">Próxima</button>
     </section>
 
-    <!-- Page 4: layout D — full-width-ish gif on top, two small texts side-by-side below on wide screens -->
+    <!-- Page 4: gif top, dois pequenos textos que revelam mini-complimentos ao tocar (não repetitivo) -->
     <section class="page layout-d" data-index="3" style="display:none">
       <img class="media" src="assets/gif4.gif" alt="gif 4" />
       <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:560px">
-        <div style="flex:1;min-width:160px"><h2>Placeholder — Texto 1</h2><p>Breve complemento.</p></div>
-        <div style="flex:1;min-width:160px"><h2>Placeholder — Texto 2</h2><p>Breve complemento.</p></div>
+        <div style="flex:1;min-width:160px;cursor:pointer" class="compl" data-message="Seu riso é meu som favorito."> 
+          <h2>Toque aqui — Texto 1</h2>
+          <p>Breve complemento.</p>
+        </div>
+        <div style="flex:1;min-width:160px;cursor:pointer" class="compl" data-message="Você deixa os dias mais leves sem esforço."> 
+          <h2>Toque aqui — Texto 2</h2>
+          <p>Breve complemento.</p>
+        </div>
       </div>
       <button class="btn next">Próxima</button>
     </section>
 
-    <!-- Page 5: final minimal page — gif5 and two tiny lines, NO botão de voltar/início -->
+    <!-- Page 5: final minimal page — gif5 and two tiny lines, NO botão -->
     <section class="page layout-a" data-index="4" style="display:none">
       <img class="media" src="assets/gif5.gif" alt="gif 5" />
       <h2>Durma bem 💫</h2>
       <p>Que amanhã te trate com mais calma.</p>
-      <!-- intentionally no button here -->
+      <p style="color:#888;font-size:13px;margin-top:8px">(Se quiser, toque em qualquer lugar para mandar um sorriso de volta)</p>
     </section>
   </main>
 
@@ -87,6 +100,33 @@
     let idx = 0;
     function show(i){ pages.forEach((p,pi)=> p.style.display = (pi===i? 'flex':'none')); window.scrollTo(0,0); }
     document.querySelectorAll('.next').forEach(b=> b.addEventListener('click', ()=>{ idx = Math.min(pages.length-1, idx+1); show(idx); }));
+
+    // Page 2: heart button -> spawn floating hearts
+    const heartBtn = document.getElementById('heartBtn');
+    if(heartBtn){ heartBtn.addEventListener('click', ()=>{
+      for(let k=0;k<6;k++){ setTimeout(()=> spawnHeart(), k*120); }
+    })}
+    function spawnHeart(){ const el = document.createElement('div'); el.className='float-heart'; el.style.left = (30 + Math.random()*40)+'%'; el.style.bottom = (120 + Math.random()*40)+'px'; el.textContent = '❤️'; document.body.appendChild(el); setTimeout(()=> el.remove(),1600); }
+
+    // Page 3: peek button reveals hidden line
+    const peekBtn = document.getElementById('peekBtn');
+    if(peekBtn){ peekBtn.addEventListener('click', ()=>{
+      const t = document.getElementById('peekText'); t.classList.add('show'); setTimeout(()=> t.classList.remove('show'),2800);
+    })}
+
+    // Page 4: tapping a text reveals a small compliment bubble + tiny sparkles
+    document.querySelectorAll('.compl').forEach(el=> el.addEventListener('click', ()=>{
+      const msg = el.dataset.message || 'Você é incrível.';
+      showBubble(msg, el);
+    }));
+    function showBubble(msg, anchor){ const b = document.createElement('div'); b.textContent = msg; b.style.position='fixed'; b.style.left = (window.innerWidth/2 - 140)+'px'; b.style.bottom = '120px'; b.style.background='rgba(0,0,0,0.8)'; b.style.color='#fff'; b.style.padding='10px 14px'; b.style.borderRadius='12px'; b.style.maxWidth='280px'; b.style.textAlign='center'; b.style.zIndex=9999; document.body.appendChild(b); setTimeout(()=> b.remove(),2300); // sparkle
+      for(let s=0;s<6;s++){ setTimeout(()=> spawnSpark(), s*80); }
+    }
+    function spawnSpark(){ const s = document.createElement('div'); s.className='sparkle'; s.style.width='12px'; s.style.height='12px'; s.style.left = (30 + Math.random()*40)+'%'; s.style.bottom = (120 + Math.random()*80)+'px'; s.style.background = 'radial-gradient(circle,#ffd6d6,#ff8a8a)'; s.style.borderRadius='50%'; s.style.animation='pop 600ms forwards'; document.body.appendChild(s); setTimeout(()=> s.remove(),700); }
+
+    // optional: let final page tap send a small heart
+    const final = pages[4]; if(final){ final.addEventListener('click', ()=> spawnHeart()); }
+
     show(0);
   </script>
 </body>
